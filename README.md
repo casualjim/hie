@@ -5,7 +5,9 @@ hasten ye collection operations
 Hie contains a generic iterable with several functional combiner methods.
 
 This library is built around the concept of an Iterable which is a very small interface that allows for 
-lazy iteration over a sequence of values.
+lazy iteration over a sequence of values.  With this you can combine many filter, map and flatmap invocations and they will only be evaluated when the first `Next` method is called.
+
+You can interrupt both ForEach and Fold so you can stop iterating and throw away the rest of the results.
 
 ```go
 type Iter[T any] interface {
