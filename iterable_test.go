@@ -12,10 +12,7 @@ func TestConcat(t *testing.T) {
 	s2 := Slice(4, 5, 6)
 	s3 := Slice(7, 8, 9)
 
-	list := &concat[int]{}
-	list.Append(s1)
-	list.Append(s2)
-	list.Append(s3)
+	list := Concat(s1, s2, s3).AsIter()
 
 	require.True(t, list.HasNext())
 	require.Equal(t, 1, list.Next())

@@ -18,7 +18,7 @@ type Option[T any] interface {
 	AsIter[T]
 }
 
-func New[T any](val T) Option[T] {
+func NewOption[T any](val T) Option[T] {
 	tpe := reflect.TypeOf(val)
 	switch tpe.Kind() {
 	case reflect.Pointer, reflect.UnsafePointer, reflect.Func, reflect.Chan, reflect.Slice, reflect.Interface, reflect.Map:
@@ -36,11 +36,19 @@ func New[T any](val T) Option[T] {
 	}
 }
 
+func Some[T any](val T) Option[T] {
+	return some[T]{value: val}
+}
+
+func None[T any]() Option[T] {
+	return none[T]{}
+}
+
 type some[T any] struct {
 	value T
 }
 
-func (some[T]) isOption()                                 {}
+func (some[T]) isOption()                                 {} //nolint:unused
 func (some[T]) IsNone() bool                              { return false }
 func (some[T]) IsSome() bool                              { return true }
 func (s some[T]) Value() T                                { return s.value }
@@ -49,10 +57,9 @@ func (s some[T]) ValueOrElse(defaultValue Defaulter[T]) T { return s.value }
 func (s some[T]) AsIter() Iter[T]                         { return Slice(s.value).AsIter() }
 
 type none[T any] struct {
-	zero T
 }
 
-func (none[T]) isOption()                               {}
+func (none[T]) isOption()                               {} //nolint:unused
 func (none[T]) IsNone() bool                            { return true }
 func (none[T]) IsSome() bool                            { return false }
 func (n none[T]) Value() T                              { panic(fmt.Sprintf("%T doesn't have a value", n)) }

@@ -27,29 +27,27 @@ func Filter[T any](iter AsIter[T], predicate Predicate[T]) AsIter[T] {
 type filterIter[T any] struct {
 	under     Iter[T]
 	predicate Predicate[T]
-	lastMatch T
-	matched   bool
+	lastMatch Option[T]
 }
 
 func (f *filterIter[T]) HasNext() bool {
 	for f.under.HasNext() {
 		val := f.under.Next()
 		if f.predicate(val) {
-			f.lastMatch = val
-			f.matched = true
+			f.lastMatch = Some(val)
 			break
 		}
 	}
-	return f.matched
+	return f.lastMatch.IsSome()
 }
 
 func (f *filterIter[T]) Next() T {
-	if !f.matched {
+	if !f.lastMatch.IsSome() {
 		panic("iterating beyond end")
 	}
 	res := f.lastMatch
-	f.matched = false
-	return res
+	f.lastMatch = None[T]()
+	return res.Value()
 }
 
 func (f *filterIter[T]) AsIter() Iter[T] {
