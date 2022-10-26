@@ -165,6 +165,7 @@ func TestGet_CancelInternal(t *testing.T) {
 
 func TestGet_CancelInternalOnlyScope(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	f := hie.DoWithContext(ctx, hie.Func(func() (int, error) {
 		time.Sleep(3 * time.Second)

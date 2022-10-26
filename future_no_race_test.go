@@ -17,7 +17,7 @@ func TestCancelConc(t *testing.T) {
 		done.Add(N)
 		f := hie.Do(hie.Func(func() (int, error) {
 			select {} //block
-			return 1, nil
+			// unreachable return 1, nil
 		}))
 		for i := 0; i < N; i++ {
 			go func() {
