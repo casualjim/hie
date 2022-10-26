@@ -15,3 +15,4 @@ Hie contains a generic iterable with a number of functional combiner methods.
 * ForEach
 * Fold
 * Collect
+

@@ -1,4 +1,4 @@
-package iterable
+package hie
 
 type AsIter[T any] interface {
 	AsIter() Iter[T]
