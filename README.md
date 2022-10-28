@@ -16,14 +16,6 @@ type Iter[T any] interface {
 }
 ```
 
-Due to the nature of Golangs generics we do need an entry point to allow for composability:
-
-```go
-type AsIter[T any] interface {
- AsIter() Iter[T]
-}
-```
-
 You can find iter implementations for a slice and an option value.
 
 ## Combiner

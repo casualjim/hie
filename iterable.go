@@ -1,13 +1,9 @@
 package hie
 
-type AsIter[T any] interface {
-	AsIter() Iter[T]
-}
-
 type Iterator[T any] func(T) bool
 
-func ForEach[T any](iter AsIter[T], fn Iterator[T]) {
-	i := iter.AsIter()
+func ForEach[T any](iter Iter[T], fn Iterator[T]) {
+	i := iter
 	for i.HasNext() {
 		if !fn(i.Next()) {
 			break
@@ -17,9 +13,9 @@ func ForEach[T any](iter AsIter[T], fn Iterator[T]) {
 
 type Predicate[T any] func(T) bool
 
-func Filter[T any](iter AsIter[T], predicate Predicate[T]) AsIter[T] {
+func Filter[T any](iter Iter[T], predicate Predicate[T]) Iter[T] {
 	return &filterIter[T]{
-		under:     iter.AsIter(),
+		under:     iter,
 		predicate: predicate,
 	}
 }
@@ -50,15 +46,11 @@ func (f *filterIter[T]) Next() T {
 	return res.Value()
 }
 
-func (f *filterIter[T]) AsIter() Iter[T] {
-	return f
-}
-
 type Mapper[T, R any] func(T) R
 
-func Map[T, R any](iter AsIter[T], fn Mapper[T, R]) AsIter[R] {
+func Map[T, R any](iter Iter[T], fn Mapper[T, R]) Iter[R] {
 	return &mapperIter[T, R]{
-		under:    iter.AsIter(),
+		under:    iter,
 		mapperFn: fn,
 	}
 }
@@ -76,17 +68,13 @@ func (m *mapperIter[T, R]) Next() R {
 	return m.mapperFn(m.under.Next())
 }
 
-func (m *mapperIter[T, R]) AsIter() Iter[R] {
-	return m
-}
+type FlatMapper[T, R any] func(T) Iter[R]
 
-type FlatMapper[T, R any] func(T) AsIter[R]
-
-func FlatMap[T, R any](iter AsIter[T], fn FlatMapper[T, R]) AsIter[R] {
+func FlatMap[T, R any](iter Iter[T], fn FlatMapper[T, R]) Iter[R] {
 
 	return &flatMapperIter[T, R]{
 		mapperFn: fn,
-		under:    iter.AsIter(),
+		under:    iter,
 	}
 }
 
@@ -102,24 +90,14 @@ func (m *flatMapperIter[T, R]) HasNext() bool {
 
 func (m *flatMapperIter[T, R]) Next() R {
 	if (m.current == nil || !m.current.HasNext()) && m.under.HasNext() {
-		m.current = m.mapperFn(m.under.Next()).AsIter()
+		m.current = m.mapperFn(m.under.Next())
 	}
 	return m.current.Next()
 }
 
-func (m *flatMapperIter[T, R]) AsIter() Iter[R] {
-	return m
-}
-
-func Slice[T any](value ...T) AsIter[T] {
-	return SliceAsIter[T](value)
-}
-
-type SliceAsIter[T any] []T
-
-func (s SliceAsIter[T]) AsIter() Iter[T] {
+func Slice[T any](value ...T) Iter[T] {
 	return &sliceIter[T]{
-		under: []T(s),
+		under: value,
 		idx:   -1,
 	}
 }
@@ -146,7 +124,7 @@ func (s *sliceIter[T]) Collect() []T {
 	return Collect(Slice(s.under...))
 }
 
-func Collect[T any](iter AsIter[T]) []T {
+func Collect[T any](iter Iter[T]) []T {
 	return Fold(iter, nil, func(t1 []T, t2 T) ([]T, bool) {
 		return append(t1, t2), true
 	})
@@ -158,9 +136,8 @@ type Iter[T any] interface {
 }
 
 var _ Iter[any] = &cons[any]{}
-var _ AsIter[any] = &cons[any]{}
 
-func Concat[T any](left AsIter[T], right AsIter[T], others ...AsIter[T]) AsIter[T] {
+func Concat[T any](left Iter[T], right Iter[T], others ...Iter[T]) Iter[T] {
 	conc, ok := left.(*concat[T])
 	if !ok {
 		conc = &concat[T]{}
@@ -178,9 +155,9 @@ type concat[T any] struct {
 	tail *cons[T]
 }
 
-func (c *concat[T]) Append(i AsIter[T]) {
+func (c *concat[T]) Append(i Iter[T]) {
 	newItem := &cons[T]{
-		under: i.AsIter(),
+		under: i,
 	}
 
 	if c.head == nil {
@@ -203,10 +180,6 @@ func (c *concat[T]) Next() T {
 	return c.head.Next()
 }
 
-func (c *concat[T]) AsIter() Iter[T] {
-	return c
-}
-
 type cons[T any] struct {
 	under Iter[T]
 	next  *cons[T]
@@ -226,23 +199,19 @@ func (c *cons[T]) Next() T {
 	panic("iterating beyond end")
 }
 
-func (c *cons[T]) Append(i AsIter[T]) *cons[T] {
+func (c *cons[T]) Append(i Iter[T]) *cons[T] {
 	next := &cons[T]{
-		under: i.AsIter(),
+		under: i,
 		next:  c,
 	}
 
 	return next
 }
 
-func (c *cons[T]) AsIter() Iter[T] {
-	return c
-}
-
 type AccumulatorLeft[A, T any] func(A, T) (A, bool)
 
-func Fold[A, T any](iter AsIter[T], initialValue A, folder AccumulatorLeft[A, T]) A {
-	it := iter.AsIter()
+func Fold[A, T any](iter Iter[T], initialValue A, folder AccumulatorLeft[A, T]) A {
+	it := iter
 	acc := initialValue
 	var shouldContinue bool
 	for it.HasNext() {

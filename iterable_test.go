@@ -12,7 +12,7 @@ func TestConcat(t *testing.T) {
 	s2 := Slice(4, 5, 6)
 	s3 := Slice(7, 8, 9)
 
-	list := Concat(s1, s2, s3).AsIter()
+	list := Concat(s1, s2, s3)
 
 	require.True(t, list.HasNext())
 	require.Equal(t, 1, list.Next())
@@ -37,7 +37,7 @@ func TestConcat(t *testing.T) {
 
 func TestSlice_Iter(t *testing.T) {
 	asIter := Slice(1, 2, 3)
-	iter := asIter.AsIter()
+	iter := asIter
 
 	require.True(t, iter.HasNext())
 	require.Equal(t, 1, iter.Next())
@@ -75,7 +75,7 @@ func TestSlice_Map(t *testing.T) {
 func TestSlice_FlatMap(t *testing.T) {
 	asIter := Slice(Slice(1, 2), Slice(3, 4), Slice(5, 6))
 
-	iter := FlatMap(asIter, func(i AsIter[int]) AsIter[string] {
+	iter := FlatMap(asIter, func(i Iter[int]) Iter[string] {
 		vals := Collect(Map(i, func(i int) string { return fmt.Sprintf("%d", i) }))
 
 		return Slice(vals...)
