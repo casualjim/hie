@@ -20,6 +20,47 @@ func ForEach[T any](iter AsIter[T], fn Iterator[T]) {
 	}
 }
 
+type FilterMapper[T, R any] func(T) (R, bool)
+
+func FilterMap[T, R any](iter AsIter[T], fn FilterMapper[T, R]) AsIter[R] {
+	return &filterMapperIter[T, R]{
+		under:     iter.AsIter(),
+		mapperFn:  fn,
+		lastMatch: None[R](),
+	}
+}
+
+type filterMapperIter[T, R any] struct {
+	under     Iter[T]
+	mapperFn  FilterMapper[T, R]
+	lastMatch Option[R]
+}
+
+func (f *filterMapperIter[T, R]) HasNext() bool {
+	if f.lastMatch.IsSome() {
+		return true
+	}
+
+	for f.under.HasNext() {
+		elem := f.under.Next()
+		if nv, ok := f.mapperFn(elem); ok {
+			f.lastMatch = Some(nv)
+			return true
+		}
+	}
+	return false
+}
+
+func (f *filterMapperIter[T, R]) Next() R {
+	res := f.lastMatch
+	f.lastMatch = None[R]()
+	return res.Value()
+}
+
+func (f *filterMapperIter[T, R]) AsIter() Iter[R] {
+	return f
+}
+
 type Mapper[T, R any] func(T) R
 
 func Map[T, R any](iter AsIter[T], fn Mapper[T, R]) AsIter[R] {

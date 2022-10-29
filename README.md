@@ -22,6 +22,7 @@ You can find iter implementations for a slice and an option value.
 
 * Map
 * Filter
+* FilterMap
 * FlatMap
 * Union: return the unique elements
 * Intersect: return the intersection of 2 iterators

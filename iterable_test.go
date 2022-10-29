@@ -2,6 +2,7 @@ package hie
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -86,9 +87,7 @@ func TestSlice_FlatMap(t *testing.T) {
 	asIter := Slice(Slice(1, 2), Slice(3, 4), Slice(5, 6))
 
 	iter := FlatMap(asIter, func(i AsIter[int]) AsIter[string] {
-		vals := Collect(Map(i, func(i int) string { return fmt.Sprintf("%d", i) }))
-
-		return Slice(vals...)
+		return Map(i, func(i int) string { return fmt.Sprintf("%d", i) })
 	})
 
 	require.Equal(t, []string{"1", "2", "3", "4", "5", "6"}, Collect(iter))
@@ -102,4 +101,14 @@ func TestFilter(t *testing.T) {
 	result := Filter(slice, func(i int) bool { return i%2 == 0 })
 
 	require.Equal(t, []int{2, 4, 6, 8}, Collect(result))
+}
+
+func TestFilterMap(t *testing.T) {
+	t.Parallel()
+
+	slice := Slice(1, 2, 3, 4, 5, 6, 7, 8)
+
+	result := FilterMap(slice, func(i int) (string, bool) { return strconv.Itoa(i), i%2 == 0 })
+
+	require.Equal(t, []string{"2", "4", "6", "8"}, Collect(result))
 }
