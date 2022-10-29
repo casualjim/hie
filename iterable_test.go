@@ -8,6 +8,8 @@ import (
 )
 
 func TestConcat(t *testing.T) {
+	t.Parallel()
+
 	s1 := Slice(1, 2, 3)
 	s2 := Slice(4, 5, 6)
 	s3 := Slice(7, 8, 9)
@@ -36,8 +38,10 @@ func TestConcat(t *testing.T) {
 }
 
 func TestSlice_Iter(t *testing.T) {
+	t.Parallel()
+
 	asIter := Slice(1, 2, 3)
-	iter := asIter
+	iter := asIter.AsIter()
 
 	require.True(t, iter.HasNext())
 	require.Equal(t, 1, iter.Next())
@@ -53,6 +57,8 @@ func TestSlice_Iter(t *testing.T) {
 }
 
 func TestSlice_ForEach(t *testing.T) {
+	t.Parallel()
+
 	asIter := Slice(1, 2, 3)
 
 	var result int
@@ -65,6 +71,8 @@ func TestSlice_ForEach(t *testing.T) {
 }
 
 func TestSlice_Map(t *testing.T) {
+	t.Parallel()
+
 	asIter := Slice(1, 2, 3)
 
 	iter := Map(asIter, func(i int) string { return fmt.Sprintf("%d", i) })
@@ -73,13 +81,25 @@ func TestSlice_Map(t *testing.T) {
 }
 
 func TestSlice_FlatMap(t *testing.T) {
+	t.Parallel()
+
 	asIter := Slice(Slice(1, 2), Slice(3, 4), Slice(5, 6))
 
-	iter := FlatMap(asIter, func(i Iter[int]) Iter[string] {
+	iter := FlatMap(asIter, func(i AsIter[int]) AsIter[string] {
 		vals := Collect(Map(i, func(i int) string { return fmt.Sprintf("%d", i) }))
 
 		return Slice(vals...)
 	})
 
 	require.Equal(t, []string{"1", "2", "3", "4", "5", "6"}, Collect(iter))
+}
+
+func TestFilter(t *testing.T) {
+	t.Parallel()
+
+	slice := Slice(1, 2, 3, 4, 5, 6, 7, 8)
+
+	result := Filter(slice, func(i int) bool { return i%2 == 0 })
+
+	require.Equal(t, []int{2, 4, 6, 8}, Collect(result))
 }

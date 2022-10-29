@@ -15,6 +15,8 @@ import (
 type tk string
 
 func TestFunc(t *testing.T) {
+	t.Parallel()
+
 	c := context.WithValue(context.Background(), tk("key"), "doesn't matter")
 	f := hie.Func(func() (int, error) {
 		return 5, nil
@@ -28,6 +30,8 @@ func TestFunc(t *testing.T) {
 }
 
 func TestGet_Success(t *testing.T) {
+	t.Parallel()
+
 	f := hie.Do(hie.Func(func() (int, error) {
 		time.Sleep(20 * time.Millisecond)
 		return 8, nil
@@ -41,6 +45,8 @@ func TestGet_Success(t *testing.T) {
 }
 
 func TestGet_Success_Repeat(t *testing.T) {
+	t.Parallel()
+
 	f := hie.Do(hie.Func(func() (int, error) {
 		time.Sleep(20 * time.Millisecond)
 		return 8, nil
@@ -56,6 +62,8 @@ func TestGet_Success_Repeat(t *testing.T) {
 }
 
 func TestGet_Error(t *testing.T) {
+	t.Parallel()
+
 	exp := errors.New("expected")
 	f := hie.Do(hie.Func(func() (any, error) {
 		time.Sleep(20 * time.Millisecond)
@@ -73,6 +81,8 @@ func TestGet_Error(t *testing.T) {
 }
 
 func TestGet_Timeout(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 	cf := make(chan struct{}, 1)
@@ -101,6 +111,8 @@ func TestGet_Timeout(t *testing.T) {
 }
 
 func TestGet_Cancel(t *testing.T) {
+	t.Parallel()
+
 	f := hie.Do(hie.Func(func() (int, error) {
 		time.Sleep(3 * time.Second)
 		return 10, nil
@@ -120,6 +132,8 @@ func TestGet_Cancel(t *testing.T) {
 }
 
 func TestGet_Cancel_Repeat(t *testing.T) {
+	t.Parallel()
+
 	f := hie.Do(hie.Func(func() (int, error) {
 		time.Sleep(3 * time.Second)
 		return 10, nil
@@ -142,6 +156,8 @@ func TestGet_Cancel_Repeat(t *testing.T) {
 }
 
 func TestGet_CancelInternal(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 
 	f := hie.DoWithContext(ctx, hie.Func(func() (int, error) {
@@ -164,6 +180,8 @@ func TestGet_CancelInternal(t *testing.T) {
 }
 
 func TestGet_CancelInternalOnlyScope(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -189,6 +207,8 @@ func TestGet_CancelInternalOnlyScope(t *testing.T) {
 }
 
 func TestGet_CancelReachesFunc(t *testing.T) {
+	t.Parallel()
+
 	cf := make(chan struct{}, 1)
 
 	f := hie.Do(func(ctx context.Context) (int, context.Context, error) {
@@ -221,6 +241,8 @@ func TestGet_CancelReachesFunc(t *testing.T) {
 }
 
 func TestThen(t *testing.T) {
+	t.Parallel()
+
 	f := hie.Do(hie.Func(func() (int, error) {
 		return 10, nil
 	})).AndThen(hie.ThenFunc(func(i int) (int, error) {
@@ -261,6 +283,8 @@ func TestThen(t *testing.T) {
 }
 
 func TestThen_Cancel(t *testing.T) {
+	t.Parallel()
+
 	var count int64
 	f := hie.Do(func(ctx context.Context) (int, context.Context, error) {
 		atomic.AddInt64(&count, 1)
@@ -293,6 +317,8 @@ func TestThen_Cancel(t *testing.T) {
 }
 
 func TestOrElse(t *testing.T) {
+	t.Parallel()
+
 	f := hie.Do(hie.Func(func() (int, error) {
 		return 0, errors.New("transient")
 	})).OrElse(hie.ElseFunc(func(i error) (int, error) {
@@ -320,6 +346,8 @@ func TestOrElse(t *testing.T) {
 
 }
 func TestOrElse_Cancel(t *testing.T) {
+	t.Parallel()
+
 	var count int64
 	f := hie.Do(func(ctx context.Context) (int, context.Context, error) {
 		atomic.AddInt64(&count, 1)

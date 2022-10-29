@@ -52,7 +52,7 @@ func (some[T]) IsSome() bool                              { return true }
 func (s some[T]) Value() T                                { return s.value }
 func (s some[T]) ValueOrDefault(defaultValue T) T         { return s.value }
 func (s some[T]) ValueOrElse(defaultValue Defaulter[T]) T { return s.value }
-func (s some[T]) AsIter() Iter[T]                         { return Slice(s.value) }
+func (s some[T]) AsIter() Iter[T]                         { return Slice(s.value).AsIter() }
 
 type none[T any] struct {
 }
@@ -63,4 +63,4 @@ func (none[T]) IsSome() bool                            { return false }
 func (n none[T]) Value() T                              { panic(fmt.Sprintf("%T doesn't have a value", n)) }
 func (none[T]) ValueOrDefault(defaultValue T) T         { return defaultValue }
 func (none[T]) ValueOrElse(defaultValue Defaulter[T]) T { return defaultValue() }
-func (n none[T]) AsIter() Iter[T]                       { return Slice[T]() }
+func (n none[T]) AsIter() Iter[T]                       { return Slice[T]().AsIter() }

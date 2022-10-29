@@ -10,6 +10,8 @@ import (
 )
 
 func TestCancelConc(t *testing.T) {
+	t.Parallel()
+
 	loop := func() {
 		const N = 8000
 		start := make(chan int)

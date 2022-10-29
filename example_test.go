@@ -7,9 +7,9 @@ import (
 )
 
 func ExampleFlatMap() {
-	asIter := hie.Slice(hie.Slice(1, 2), hie.Slice(3, 4), hie.Slice(5, 6))
+	slices := hie.Slice(hie.Slice(1, 2), hie.Slice(3, 4), hie.Slice(5, 6))
 
-	iter := hie.FlatMap(asIter, func(i hie.Iter[int]) hie.Iter[string] {
+	iter := hie.FlatMap(slices, func(i hie.AsIter[int]) hie.AsIter[string] {
 		return hie.Map(i, func(i int) string { return fmt.Sprintf("%d", i) })
 	})
 
