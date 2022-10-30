@@ -1,5 +1,15 @@
 package hie
 
+type emptyIter[T any] struct{}
+
+func (emptyIter[T]) HasNext() bool     { return false }
+func (emptyIter[T]) Next() T           { panic("next called on an empty iter") }
+func (e emptyIter[T]) AsIter() Iter[T] { return e }
+
+func EmptyIter[T any]() AsIter[T] {
+	return emptyIter[T]{}
+}
+
 type Iterator[T any] func(T) bool
 
 type Iter[T any] interface {
