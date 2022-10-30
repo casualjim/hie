@@ -1,8 +1,8 @@
 package hie
 
 // Contains returns true if an element is present in the collection
-func Contains[T comparable](iter AsIter[T], elem T) bool {
-	i := iter.AsIter()
+func Contains[T comparable](iter Iter[T], elem T) bool {
+	i := iter
 	for i.HasNext() {
 		if elem == i.Next() {
 			return true
@@ -12,8 +12,8 @@ func Contains[T comparable](iter AsIter[T], elem T) bool {
 }
 
 // Exists returns true if predicate function return true.
-func Exists[T any](iter AsIter[T], predicate Predicate[T]) bool {
-	i := iter.AsIter()
+func Exists[T any](iter Iter[T], predicate Predicate[T]) bool {
+	i := iter
 	for i.HasNext() {
 		if predicate(i.Next()) {
 			return true
@@ -23,8 +23,8 @@ func Exists[T any](iter AsIter[T], predicate Predicate[T]) bool {
 }
 
 // All returns true if the predicate returns true for all of the elements in the collection or if the collection is empty.
-func All[T any](iter AsIter[T], predicate Predicate[T]) bool {
-	i := iter.AsIter()
+func All[T any](iter Iter[T], predicate Predicate[T]) bool {
+	i := iter
 	for i.HasNext() {
 		if !predicate(i.Next()) {
 			return false
@@ -34,15 +34,15 @@ func All[T any](iter AsIter[T], predicate Predicate[T]) bool {
 }
 
 // NoneExist returns true if the predicate returns false for all the elements in the collection or if the collection is empty
-func NoneExist[T any](iter AsIter[T], predicate Predicate[T]) bool {
+func NoneExist[T any](iter Iter[T], predicate Predicate[T]) bool {
 	return All(iter, func(elem T) bool { return !predicate(elem) })
 }
 
 // IsSubset returns true if all elements of a subset are contained into a collection or if the subset is empty.
-func IsSubset[T comparable](iter AsIter[T], subset AsIter[T]) bool {
-	si := subset.AsIter()
+func IsSubset[T comparable](iter Iter[T], subset Iter[T]) bool {
+	si := subset
 	cached := Collect(iter)
-	rewindable := Slice(cached...)
+	rewindable := Slice(cached...).AsIter()
 	for si.HasNext() {
 		if !Contains(rewindable, si.Next()) {
 			return false
@@ -52,9 +52,9 @@ func IsSubset[T comparable](iter AsIter[T], subset AsIter[T]) bool {
 }
 
 // IsDisjoint returns true if none of the elements of the subset set are contained by the superset
-func IsDisjoint[T comparable](iter AsIter[T], other AsIter[T]) bool {
-	oi := other.AsIter()
-	cached := Slice(Collect(iter)...)
+func IsDisjoint[T comparable](iter Iter[T], other Iter[T]) bool {
+	oi := other
+	cached := Slice(Collect(iter)...).AsIter()
 	for oi.HasNext() {
 		if Contains(cached, oi.Next()) {
 			return false
@@ -64,16 +64,16 @@ func IsDisjoint[T comparable](iter AsIter[T], other AsIter[T]) bool {
 }
 
 // Intersect returns the intersection between two collections.
-func Intersect[T comparable](first AsIter[T], second AsIter[T]) AsIter[T] {
+func Intersect[T comparable](first Iter[T], second Iter[T]) Iter[T] {
 	seen := make(map[T]struct{})
-	firsti := first.AsIter()
+	firsti := first
 	for firsti.HasNext() {
 		seen[firsti.Next()] = struct{}{}
 	}
 
 	return &intersectingIter[T]{
 		seen:        seen,
-		second:      second.AsIter(),
+		second:      second,
 		secondMatch: None[T](),
 	}
 }
@@ -102,18 +102,18 @@ func (i *intersectingIter[T]) Next() T {
 	return val.Value()
 }
 
-func (i *intersectingIter[T]) AsIter() Iter[T] {
+func (i *intersectingIter[T]) Iter() Iter[T] {
 	return i
 }
 
 // Difference returns the difference between two collections.
 // The returned slice are the elements that are in the first collection but not in the second
-func Difference[T comparable](first AsIter[T], second AsIter[T]) AsIter[T] {
+func Difference[T comparable](first Iter[T], second Iter[T]) Iter[T] {
 	var result []T
 	seen := make(map[T]struct{})
 
-	left := first.AsIter()
-	right := second.AsIter()
+	left := first
+	right := second
 
 	for right.HasNext() {
 		elem := right.Next()
@@ -126,13 +126,13 @@ func Difference[T comparable](first AsIter[T], second AsIter[T]) AsIter[T] {
 			result = append(result, elem)
 		}
 	}
-	return Slice(result...)
+	return Slice(result...).AsIter()
 }
 
 // SymmetricDifference removes the overlap between the 2 collections
 // The returned slice are the elements that are in either the first or the second collection,
 // but not in both
-func SymmetricDifference[T comparable](first AsIter[T], second AsIter[T]) AsIter[T] {
+func SymmetricDifference[T comparable](first Iter[T], second Iter[T]) Iter[T] {
 	var result []T
 	var leftbuf []T
 	var rightbuf []T
@@ -140,8 +140,8 @@ func SymmetricDifference[T comparable](first AsIter[T], second AsIter[T]) AsIter
 	seenLeft := make(map[T]struct{})
 	seenRight := make(map[T]struct{})
 
-	left := first.AsIter()
-	right := second.AsIter()
+	left := first
+	right := second
 
 	for left.HasNext() {
 		elem := left.Next()
@@ -167,12 +167,12 @@ func SymmetricDifference[T comparable](first AsIter[T], second AsIter[T]) AsIter
 		}
 	}
 
-	return Slice(result...)
+	return Slice(result...).AsIter()
 }
 
 // Union returns all distinct elements from given collections.
 // result returns will not change the order of elements relatively.
-func Union[T comparable](left AsIter[T], right AsIter[T], others ...AsIter[T]) AsIter[T] {
+func Union[T comparable](left Iter[T], right Iter[T], others ...Iter[T]) Iter[T] {
 	return &unionIter[T]{
 		seen:    make(map[T]struct{}),
 		current: Concat(left, right, others...),
@@ -203,6 +203,6 @@ func (i *unionIter[T]) Next() T {
 	return res.Value()
 }
 
-func (i *unionIter[T]) AsIter() Iter[T] {
+func (i *unionIter[T]) Iter() Iter[T] {
 	return i
 }

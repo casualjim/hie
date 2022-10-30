@@ -1,10 +1,16 @@
 package hie
 
-func Slice[T any](value ...T) AsIter[T] {
+type slice[T any] []T
+
+func (s slice[T]) AsIter() Iter[T] {
 	return &sliceIter[T]{
-		under: value,
+		under: []T(s),
 		idx:   -1,
 	}
+}
+
+func Slice[T any](value ...T) AsIter[T] {
+	return slice[T](value)
 }
 
 type sliceIter[T any] struct {
@@ -23,17 +29,4 @@ func (s *sliceIter[T]) Next() T {
 
 	s.idx++
 	return s.under[s.idx]
-}
-
-func (s *sliceIter[T]) Collect() []T {
-	result := make([]T, len(s.under))
-	copy(result, s.under)
-	return result
-}
-
-func (s *sliceIter[T]) AsIter() Iter[T] {
-	return &sliceIter[T]{
-		under: s.under,
-		idx:   -1,
-	}
 }

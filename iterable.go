@@ -1,24 +1,11 @@
 package hie
 
-func Wrap[T any](iter Iter[T]) AsIter[T] {
-	return iterAsIter[T]{under: iter}
-}
-
-type iterAsIter[T any] struct {
-	under Iter[T]
-}
-
-func (i iterAsIter[T]) AsIter() Iter[T] {
-	return i.under
-}
-
 type emptyIter[T any] struct{}
 
-func (emptyIter[T]) HasNext() bool     { return false }
-func (emptyIter[T]) Next() T           { panic("next called on an empty iter") }
-func (e emptyIter[T]) AsIter() Iter[T] { return e }
+func (emptyIter[T]) HasNext() bool { return false }
+func (emptyIter[T]) Next() T       { panic("next called on an empty iter") }
 
-func EmptyIter[T any]() AsIter[T] {
+func EmptyIter[T any]() Iter[T] {
 	return emptyIter[T]{}
 }
 
@@ -33,8 +20,8 @@ type AsIter[T any] interface {
 	AsIter() Iter[T]
 }
 
-func ForEach[T any](iter AsIter[T], fn Iterator[T]) {
-	i := iter.AsIter()
+func ForEach[T any](iter Iter[T], fn Iterator[T]) {
+	i := iter
 	for i.HasNext() {
 		if !fn(i.Next()) {
 			break
@@ -44,9 +31,9 @@ func ForEach[T any](iter AsIter[T], fn Iterator[T]) {
 
 type FilterMapper[T, R any] func(T) (R, bool)
 
-func FilterMap[T, R any](iter AsIter[T], fn FilterMapper[T, R]) AsIter[R] {
+func FilterMap[T, R any](iter Iter[T], fn FilterMapper[T, R]) Iter[R] {
 	return &filterMapperIter[T, R]{
-		under:     iter.AsIter(),
+		under:     iter,
 		mapperFn:  fn,
 		lastMatch: None[R](),
 	}
@@ -79,15 +66,11 @@ func (f *filterMapperIter[T, R]) Next() R {
 	return res.Value()
 }
 
-func (f *filterMapperIter[T, R]) AsIter() Iter[R] {
-	return f
-}
-
 type Mapper[T, R any] func(T) R
 
-func Map[T, R any](iter AsIter[T], fn Mapper[T, R]) AsIter[R] {
+func Map[T, R any](iter Iter[T], fn Mapper[T, R]) Iter[R] {
 	return &mapperIter[T, R]{
-		under:    iter.AsIter(),
+		under:    iter,
 		mapperFn: fn,
 	}
 }
@@ -105,17 +88,13 @@ func (m *mapperIter[T, R]) Next() R {
 	return m.mapperFn(m.under.Next())
 }
 
-func (m *mapperIter[T, R]) AsIter() Iter[R] {
-	return m
-}
+type FlatMapper[T, R any] func(T) Iter[R]
 
-type FlatMapper[T, R any] func(T) AsIter[R]
-
-func FlatMap[T, R any](iter AsIter[T], fn FlatMapper[T, R]) AsIter[R] {
+func FlatMap[T, R any](iter Iter[T], fn FlatMapper[T, R]) Iter[R] {
 
 	return &flatMapperIter[T, R]{
 		mapperFn: fn,
-		under:    iter.AsIter(),
+		under:    iter,
 	}
 }
 
@@ -131,20 +110,16 @@ func (m *flatMapperIter[T, R]) HasNext() bool {
 
 func (m *flatMapperIter[T, R]) Next() R {
 	if (m.current == nil || !m.current.HasNext()) && m.under.HasNext() {
-		m.current = m.mapperFn(m.under.Next()).AsIter()
+		m.current = m.mapperFn(m.under.Next())
 	}
 	return m.current.Next()
 }
 
-func (m *flatMapperIter[T, R]) AsIter() Iter[R] {
-	return m
-}
-
 type Predicate[T any] func(T) bool
 
-func Filter[T any](iter AsIter[T], predicate Predicate[T]) AsIter[T] {
+func Filter[T any](iter Iter[T], predicate Predicate[T]) Iter[T] {
 	return &filterIter[T]{
-		under:     iter.AsIter(),
+		under:     iter,
 		predicate: predicate,
 		lastMatch: None[T](),
 	}
@@ -180,11 +155,7 @@ func (f *filterIter[T]) Next() T {
 	return res.Value()
 }
 
-func (f *filterIter[T]) AsIter() Iter[T] {
-	return f
-}
-
-func Collect[T any](iter AsIter[T]) []T {
+func Collect[T any](iter Iter[T]) []T {
 	return Fold(iter, nil, func(t1 []T, t2 T) ([]T, bool) {
 		return append(t1, t2), true
 	})
@@ -192,7 +163,7 @@ func Collect[T any](iter AsIter[T]) []T {
 
 var _ Iter[any] = &cons[any]{}
 
-func Concat[T any](left AsIter[T], right AsIter[T], others ...AsIter[T]) Iter[T] {
+func Concat[T any](left Iter[T], right Iter[T], others ...Iter[T]) Iter[T] {
 	conc, ok := left.(*concat[T])
 	if !ok {
 		conc = &concat[T]{}
@@ -210,9 +181,9 @@ type concat[T any] struct {
 	tail *cons[T]
 }
 
-func (c *concat[T]) Append(i AsIter[T]) {
+func (c *concat[T]) Append(i Iter[T]) {
 	newItem := &cons[T]{
-		under: i.AsIter(),
+		under: i,
 	}
 
 	if c.head == nil {
@@ -233,10 +204,6 @@ func (c *concat[T]) Next() T {
 		panic("iterating an empty concat iterator")
 	}
 	return c.head.Next()
-}
-
-func (c *concat[T]) AsIter() Iter[T] {
-	return c
 }
 
 type cons[T any] struct {
@@ -269,8 +236,8 @@ func (c *cons[T]) Append(i Iter[T]) *cons[T] {
 
 type AccumulatorLeft[A, T any] func(A, T) (A, bool)
 
-func Fold[A, T any](iter AsIter[T], initialValue A, folder AccumulatorLeft[A, T]) A {
-	it := iter.AsIter()
+func Fold[A, T any](iter Iter[T], initialValue A, folder AccumulatorLeft[A, T]) A {
+	it := iter
 	acc := initialValue
 	var shouldContinue bool
 	for it.HasNext() {
@@ -282,10 +249,10 @@ func Fold[A, T any](iter AsIter[T], initialValue A, folder AccumulatorLeft[A, T]
 	return acc
 }
 
-func TakeN[T any](iter AsIter[T], n int) AsIter[T] {
+func TakeN[T any](iter Iter[T], n int) Iter[T] {
 	return &takeNIter[T]{
 		max:   n,
-		under: iter.AsIter(),
+		under: iter,
 	}
 }
 
@@ -303,8 +270,4 @@ func (n *takeNIter[T]) Next() T {
 	elem := n.under.Next()
 	n.count++
 	return elem
-}
-
-func (n *takeNIter[T]) AsIter() Iter[T] {
-	return n
 }
