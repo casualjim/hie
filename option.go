@@ -14,6 +14,7 @@ type Option[T any] interface {
 	ValueOrDefault() T
 	ValueOr(T) T
 	ValueOrElse(Defaulter[T]) T
+	AsIter() Iter[T]
 	isOption()
 }
 
