@@ -11,3 +11,10 @@ func Find[T any](iter Iter[T], predicate Predicate[T]) Option[T] {
 	}
 	return None[T]()
 }
+
+func First[T any](iter Iter[T]) Option[T] {
+	for iter.HasNext() {
+		return Some(iter.Next())
+	}
+	return None[T]()
+}
