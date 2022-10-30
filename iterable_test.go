@@ -112,3 +112,21 @@ func TestFilterMap(t *testing.T) {
 
 	require.Equal(t, []string{"2", "4", "6", "8"}, Collect(result))
 }
+
+func TestTakeN(t *testing.T) {
+	t.Parallel()
+
+	slice := Slice(1, 2, 3, 4, 5, 6, 7, 8)
+	result := TakeN(slice, 4)
+
+	empty := EmptyIter[int]()
+	er := TakeN(empty, 4)
+
+	empty2 := Slice[int]()
+	er2 := TakeN(empty2, 3)
+
+	require.Equal(t, []int{1, 2, 3, 4}, Collect(result))
+	require.Equal(t, []int(nil), Collect(er))
+	require.Equal(t, []int(nil), Collect(er2))
+	require.Equal(t, []int{1, 2, 3, 4, 5, 6, 7, 8}, Collect(TakeN(slice, 10)))
+}

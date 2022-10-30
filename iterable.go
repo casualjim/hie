@@ -173,7 +173,7 @@ func (f *filterIter[T]) AsIter() Iter[T] {
 }
 
 func Collect[T any](iter AsIter[T]) []T {
-	return Fold(iter.AsIter(), nil, func(t1 []T, t2 T) ([]T, bool) {
+	return Fold(iter, nil, func(t1 []T, t2 T) ([]T, bool) {
 		return append(t1, t2), true
 	})
 }
@@ -257,8 +257,8 @@ func (c *cons[T]) Append(i Iter[T]) *cons[T] {
 
 type AccumulatorLeft[A, T any] func(A, T) (A, bool)
 
-func Fold[A, T any](iter Iter[T], initialValue A, folder AccumulatorLeft[A, T]) A {
-	it := iter
+func Fold[A, T any](iter AsIter[T], initialValue A, folder AccumulatorLeft[A, T]) A {
+	it := iter.AsIter()
 	acc := initialValue
 	var shouldContinue bool
 	for it.HasNext() {
@@ -268,4 +268,31 @@ func Fold[A, T any](iter Iter[T], initialValue A, folder AccumulatorLeft[A, T]) 
 		}
 	}
 	return acc
+}
+
+func TakeN[T any](iter AsIter[T], n int) AsIter[T] {
+	return &takeNIter[T]{
+		max:   n,
+		under: iter.AsIter(),
+	}
+}
+
+type takeNIter[T any] struct {
+	max   int
+	count int
+	under Iter[T]
+}
+
+func (n *takeNIter[T]) HasNext() bool {
+	return n.count < n.max && n.under.HasNext()
+}
+
+func (n *takeNIter[T]) Next() T {
+	elem := n.under.Next()
+	n.count++
+	return elem
+}
+
+func (n *takeNIter[T]) AsIter() Iter[T] {
+	return n
 }
