@@ -1,5 +1,17 @@
 package hie
 
+func Wrap[T any](iter Iter[T]) AsIter[T] {
+	return iterAsIter[T]{under: iter}
+}
+
+type iterAsIter[T any] struct {
+	under Iter[T]
+}
+
+func (i iterAsIter[T]) AsIter() Iter[T] {
+	return i.under
+}
+
 type emptyIter[T any] struct{}
 
 func (emptyIter[T]) HasNext() bool     { return false }
