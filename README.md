@@ -35,10 +35,12 @@ You can find iter implementations for a slice and an option value.
 * Collect
 * Difference
 * Symmetric Difference
+* Find: return an option with the first matching value
+* First: return the first element of a collection as an option
 
 ## Option 
 
-This library also contains an Option type that can be used with the same combinator.
+This library also contains an Option type that can be used with the same combinators.
 
 ## What's next
 
