@@ -93,6 +93,16 @@ func TestSlice_FlatMap(t *testing.T) {
 	require.Equal(t, []string{"1", "2", "3", "4", "5", "6"}, Collect(iter))
 }
 
+func TestSlice_Flatten(t *testing.T) {
+	t.Parallel()
+
+	slice := Slice(Slice(1, 2).AsIter(), Slice(3, 4).AsIter(), Slice(5, 6).AsIter())
+
+	iter := Flatten(slice.AsIter())
+
+	require.Equal(t, []int{1, 2, 3, 4, 5, 6}, Collect(iter))
+}
+
 func TestFilter(t *testing.T) {
 	t.Parallel()
 

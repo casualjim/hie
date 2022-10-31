@@ -1,5 +1,7 @@
 package hie
 
+func Identity[T any](input T) T { return input }
+
 type emptyIter[T any] struct{}
 
 func (emptyIter[T]) HasNext() bool { return false }
@@ -16,10 +18,6 @@ type Iter[T any] interface {
 	Next() T
 }
 
-type AsIter[T any] interface {
-	AsIter() Iter[T]
-}
-
 func ForEach[T any](iter Iter[T], fn Iterator[T]) {
 	i := iter
 	for i.HasNext() {
@@ -27,6 +25,10 @@ func ForEach[T any](iter Iter[T], fn Iterator[T]) {
 			break
 		}
 	}
+}
+
+func Flatten[T any](iter Iter[Iter[T]]) Iter[T] {
+	return FlatMap(iter, Identity[Iter[T]])
 }
 
 type FilterMapper[T, R any] func(T) (R, bool)
