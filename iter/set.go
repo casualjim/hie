@@ -2,7 +2,7 @@ package iter
 
 import (
 	"github.com/casualjim/hie"
-	"github.com/casualjim/hie/option"
+	"github.com/casualjim/hie/opt"
 )
 
 // Contains returns true if an element is present in the collection
@@ -79,21 +79,21 @@ func Intersect[T comparable](first hie.Iter[T], second hie.Iter[T]) hie.Iter[T] 
 	return &intersectingIter[T]{
 		seen:        seen,
 		second:      second,
-		secondMatch: option.None[T](),
+		secondMatch: opt.None[T](),
 	}
 }
 
 type intersectingIter[T comparable] struct {
 	seen        map[T]struct{}
 	second      hie.Iter[T]
-	secondMatch option.Option[T]
+	secondMatch opt.Option[T]
 }
 
 func (i *intersectingIter[T]) HasNext() bool {
 	for i.second.HasNext() {
 		val := i.second.Next()
 		if _, seen := i.seen[val]; seen {
-			i.secondMatch = option.Some(val)
+			i.secondMatch = opt.Some(val)
 			return true
 		}
 	}
@@ -102,7 +102,7 @@ func (i *intersectingIter[T]) HasNext() bool {
 
 func (i *intersectingIter[T]) Next() T {
 	val := i.secondMatch
-	i.secondMatch = option.None[T]()
+	i.secondMatch = opt.None[T]()
 	i.seen[val.Value()] = struct{}{}
 	return val.Value()
 }
@@ -187,7 +187,7 @@ func Union[T comparable](left hie.Iter[T], right hie.Iter[T], others ...hie.Iter
 type unionIter[T comparable] struct {
 	seen    map[T]struct{}
 	current hie.Iter[T]
-	notSeen option.Option[T]
+	notSeen opt.Option[T]
 }
 
 func (i *unionIter[T]) HasNext() bool {
@@ -195,7 +195,7 @@ func (i *unionIter[T]) HasNext() bool {
 		elem := i.current.Next()
 		if _, seen := i.seen[elem]; !seen {
 			i.seen[elem] = struct{}{}
-			i.notSeen = option.Some(elem)
+			i.notSeen = opt.Some(elem)
 			return true
 		}
 	}
@@ -204,7 +204,7 @@ func (i *unionIter[T]) HasNext() bool {
 
 func (i *unionIter[T]) Next() T {
 	res := i.notSeen
-	i.notSeen = option.None[T]()
+	i.notSeen = opt.None[T]()
 	return res.Value()
 }
 

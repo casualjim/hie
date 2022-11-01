@@ -3,7 +3,7 @@ package iterable
 import (
 	"github.com/casualjim/hie"
 	"github.com/casualjim/hie/iter"
-	"github.com/casualjim/hie/option"
+	"github.com/casualjim/hie/opt"
 )
 
 type AsIter[T any] interface {
@@ -64,6 +64,6 @@ func TakeN[T any](it AsIter[T], n int) hie.Iter[T] {
 	return iter.TakeN(it.AsIter(), n)
 }
 
-func Find[T any](it AsIter[T], predicate iter.Predicate[T]) option.Option[T] {
+func Find[T any](it AsIter[T], predicate iter.Predicate[T]) opt.Option[T] {
 	return iter.Find(it.AsIter(), predicate)
 }

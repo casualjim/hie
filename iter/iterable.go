@@ -2,7 +2,7 @@ package iter
 
 import (
 	"github.com/casualjim/hie"
-	"github.com/casualjim/hie/option"
+	"github.com/casualjim/hie/opt"
 )
 
 func ForEach[T any](iter hie.Iter[T], fn hie.Iterator[T]) {
@@ -24,14 +24,14 @@ func FilterMap[T, R any](iter hie.Iter[T], fn FilterMapper[T, R]) hie.Iter[R] {
 	return &filterMapperIter[T, R]{
 		under:     iter,
 		mapperFn:  fn,
-		lastMatch: option.None[R](),
+		lastMatch: opt.None[R](),
 	}
 }
 
 type filterMapperIter[T, R any] struct {
 	under     hie.Iter[T]
 	mapperFn  FilterMapper[T, R]
-	lastMatch option.Option[R]
+	lastMatch opt.Option[R]
 }
 
 func (f *filterMapperIter[T, R]) HasNext() bool {
@@ -42,7 +42,7 @@ func (f *filterMapperIter[T, R]) HasNext() bool {
 	for f.under.HasNext() {
 		elem := f.under.Next()
 		if nv, ok := f.mapperFn(elem); ok {
-			f.lastMatch = option.Some(nv)
+			f.lastMatch = opt.Some(nv)
 			return true
 		}
 	}
@@ -51,7 +51,7 @@ func (f *filterMapperIter[T, R]) HasNext() bool {
 
 func (f *filterMapperIter[T, R]) Next() R {
 	res := f.lastMatch
-	f.lastMatch = option.None[R]()
+	f.lastMatch = opt.None[R]()
 	return res.Value()
 }
 
@@ -110,14 +110,14 @@ func Filter[T any](iter hie.Iter[T], predicate Predicate[T]) hie.Iter[T] {
 	return &filterIter[T]{
 		under:     iter,
 		predicate: predicate,
-		lastMatch: option.None[T](),
+		lastMatch: opt.None[T](),
 	}
 }
 
 type filterIter[T any] struct {
 	under     hie.Iter[T]
 	predicate Predicate[T]
-	lastMatch option.Option[T]
+	lastMatch opt.Option[T]
 }
 
 func (f *filterIter[T]) HasNext() bool {
@@ -128,7 +128,7 @@ func (f *filterIter[T]) HasNext() bool {
 	for f.under.HasNext() {
 		val := f.under.Next()
 		if f.predicate(val) {
-			f.lastMatch = option.Some(val)
+			f.lastMatch = opt.Some(val)
 			break
 		}
 	}
@@ -140,7 +140,7 @@ func (f *filterIter[T]) Next() T {
 		panic("iterating beyond end")
 	}
 	res := f.lastMatch
-	f.lastMatch = option.None[T]()
+	f.lastMatch = opt.None[T]()
 	return res.Value()
 }
 
