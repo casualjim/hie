@@ -1,8 +1,10 @@
-package hie
+package option
 
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/casualjim/hie"
 )
 
 type Defaulter[T any] func() T
@@ -14,11 +16,11 @@ type Option[T any] interface {
 	ValueOrDefault() T
 	ValueOr(T) T
 	ValueOrElse(Defaulter[T]) T
-	AsIter() Iter[T]
+	AsIter() hie.Iter[T]
 	isOption()
 }
 
-func NewOption[T any](val T) Option[T] {
+func New[T any](val T) Option[T] {
 	tpe := reflect.TypeOf(val)
 	switch tpe.Kind() {
 	case reflect.Pointer, reflect.UnsafePointer, reflect.Func, reflect.Chan, reflect.Slice, reflect.Interface, reflect.Map:
@@ -57,7 +59,7 @@ func (s some[T]) ValueOrDefault() T {
 }
 func (s some[T]) ValueOr(defaultValue T) T                { return s.value }
 func (s some[T]) ValueOrElse(defaultValue Defaulter[T]) T { return s.value }
-func (s some[T]) AsIter() Iter[T]                         { return Slice(s.value).AsIter() }
+func (s some[T]) AsIter() hie.Iter[T]                     { return hie.Slice(s.value).AsIter() }
 
 type none[T any] struct {
 }
@@ -74,4 +76,4 @@ func (none[T]) ValueOr(defaultValue T) T {
 	return defaultValue
 }
 func (none[T]) ValueOrElse(defaultValue Defaulter[T]) T { return defaultValue() }
-func (n none[T]) AsIter() Iter[T]                       { return Slice[T]().AsIter() }
+func (n none[T]) AsIter() hie.Iter[T]                   { return hie.Slice[T]().AsIter() }

@@ -1,4 +1,4 @@
-package hie_test
+package future_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/casualjim/hie"
+	"github.com/casualjim/hie/future"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +18,7 @@ func TestFunc(t *testing.T) {
 	t.Parallel()
 
 	c := context.WithValue(context.Background(), tk("key"), "doesn't matter")
-	f := hie.Func(func() (int, error) {
+	f := future.Func(func() (int, error) {
 		return 5, nil
 	})
 
@@ -32,7 +32,7 @@ func TestFunc(t *testing.T) {
 func TestGet_Success(t *testing.T) {
 	t.Parallel()
 
-	f := hie.Do(hie.Func(func() (int, error) {
+	f := future.Do(future.Func(func() (int, error) {
 		time.Sleep(20 * time.Millisecond)
 		return 8, nil
 	}))
@@ -47,7 +47,7 @@ func TestGet_Success(t *testing.T) {
 func TestGet_Success_Repeat(t *testing.T) {
 	t.Parallel()
 
-	f := hie.Do(hie.Func(func() (int, error) {
+	f := future.Do(future.Func(func() (int, error) {
 		time.Sleep(20 * time.Millisecond)
 		return 8, nil
 	}))
@@ -65,7 +65,7 @@ func TestGet_Error(t *testing.T) {
 	t.Parallel()
 
 	exp := errors.New("expected")
-	f := hie.Do(hie.Func(func() (any, error) {
+	f := future.Do(future.Func(func() (any, error) {
 		time.Sleep(20 * time.Millisecond)
 		return nil, exp
 	}))
@@ -86,7 +86,7 @@ func TestGet_Timeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 	cf := make(chan struct{}, 1)
-	f := hie.DoWithContext(ctx, func(ctx context.Context) (int, context.Context, error) {
+	f := future.DoWithContext(ctx, func(ctx context.Context) (int, context.Context, error) {
 		select {
 		case <-ctx.Done():
 			cf <- struct{}{}
@@ -113,7 +113,7 @@ func TestGet_Timeout(t *testing.T) {
 func TestGet_Cancel(t *testing.T) {
 	t.Parallel()
 
-	f := hie.Do(hie.Func(func() (int, error) {
+	f := future.Do(future.Func(func() (int, error) {
 		time.Sleep(3 * time.Second)
 		return 10, nil
 	}))
@@ -134,7 +134,7 @@ func TestGet_Cancel(t *testing.T) {
 func TestGet_Cancel_Repeat(t *testing.T) {
 	t.Parallel()
 
-	f := hie.Do(hie.Func(func() (int, error) {
+	f := future.Do(future.Func(func() (int, error) {
 		time.Sleep(3 * time.Second)
 		return 10, nil
 	}))
@@ -160,7 +160,7 @@ func TestGet_CancelInternal(t *testing.T) {
 
 	ctx := context.Background()
 
-	f := hie.DoWithContext(ctx, hie.Func(func() (int, error) {
+	f := future.DoWithContext(ctx, future.Func(func() (int, error) {
 		time.Sleep(3 * time.Second)
 		return 10, nil
 	}))
@@ -185,7 +185,7 @@ func TestGet_CancelInternalOnlyScope(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	f := hie.DoWithContext(ctx, hie.Func(func() (int, error) {
+	f := future.DoWithContext(ctx, future.Func(func() (int, error) {
 		time.Sleep(3 * time.Second)
 		return 10, nil
 	}))
@@ -211,7 +211,7 @@ func TestGet_CancelReachesFunc(t *testing.T) {
 
 	cf := make(chan struct{}, 1)
 
-	f := hie.Do(func(ctx context.Context) (int, context.Context, error) {
+	f := future.Do(func(ctx context.Context) (int, context.Context, error) {
 		select {
 		case <-ctx.Done():
 			cf <- struct{}{}
@@ -243,11 +243,11 @@ func TestGet_CancelReachesFunc(t *testing.T) {
 func TestThen(t *testing.T) {
 	t.Parallel()
 
-	f := hie.Do(hie.Func(func() (int, error) {
+	f := future.Do(future.Func(func() (int, error) {
 		return 10, nil
-	})).AndThen(hie.ThenFunc(func(i int) (int, error) {
+	})).AndThen(future.ThenFunc(func(i int) (int, error) {
 		return 2 * i, nil
-	})).AndThen(hie.ThenFunc(func(i int) (int, error) {
+	})).AndThen(future.ThenFunc(func(i int) (int, error) {
 		return 2 + i, nil
 	}))
 
@@ -257,9 +257,9 @@ func TestThen(t *testing.T) {
 	assert.NotNil(t, ctx)
 
 	exp := errors.New("expected")
-	g := hie.Do(hie.Func(func() (int, error) {
+	g := future.Do(future.Func(func() (int, error) {
 		return 0, exp
-	})).AndThen(hie.ThenFunc(func(i int) (int, error) {
+	})).AndThen(future.ThenFunc(func(i int) (int, error) {
 		return 2 * i, nil
 	}))
 
@@ -270,9 +270,9 @@ func TestThen(t *testing.T) {
 	assert.EqualError(t, exp, err.Error())
 
 	exp2 := errors.New("expected later")
-	h := hie.Do(hie.Func(func() (int, error) {
+	h := future.Do(future.Func(func() (int, error) {
 		return 10, nil
-	})).AndThen(hie.ThenFunc(func(i int) (int, error) {
+	})).AndThen(future.ThenFunc(func(i int) (int, error) {
 		return 0, exp2
 	}))
 	result, ctx, err = h.Get()
@@ -286,7 +286,7 @@ func TestThen_Cancel(t *testing.T) {
 	t.Parallel()
 
 	var count int64
-	f := hie.Do(func(ctx context.Context) (int, context.Context, error) {
+	f := future.Do(func(ctx context.Context) (int, context.Context, error) {
 		atomic.AddInt64(&count, 1)
 		select {
 		case <-ctx.Done():
@@ -319,9 +319,9 @@ func TestThen_Cancel(t *testing.T) {
 func TestOrElse(t *testing.T) {
 	t.Parallel()
 
-	f := hie.Do(hie.Func(func() (int, error) {
+	f := future.Do(future.Func(func() (int, error) {
 		return 0, errors.New("transient")
-	})).OrElse(hie.ElseFunc(func(i error) (int, error) {
+	})).OrElse(future.ElseFunc(func(i error) (int, error) {
 		return 20, nil
 	}))
 
@@ -331,11 +331,11 @@ func TestOrElse(t *testing.T) {
 	assert.NotNil(t, ctx)
 
 	exp := errors.New("expected")
-	g := hie.Do(hie.Func(func() (int, error) {
+	g := future.Do(future.Func(func() (int, error) {
 		return 0, exp
-	})).OrElse(hie.ElseFunc(func(i error) (int, error) {
+	})).OrElse(future.ElseFunc(func(i error) (int, error) {
 		return 21, nil
-	})).OrElse(hie.ElseFunc(func(i error) (int, error) {
+	})).OrElse(future.ElseFunc(func(i error) (int, error) {
 		return 22, nil // should not execute because previous is success
 	}))
 
@@ -349,7 +349,7 @@ func TestOrElse_Cancel(t *testing.T) {
 	t.Parallel()
 
 	var count int64
-	f := hie.Do(func(ctx context.Context) (int, context.Context, error) {
+	f := future.Do(func(ctx context.Context) (int, context.Context, error) {
 		atomic.AddInt64(&count, 1)
 		select {
 		case <-ctx.Done():

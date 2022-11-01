@@ -1,5 +1,23 @@
 package hie
 
+func Identity[T any](input T) T { return input }
+
+type emptyIter[T any] struct{}
+
+func (emptyIter[T]) HasNext() bool { return false }
+func (emptyIter[T]) Next() T       { panic("next called on an empty iter") }
+
+func EmptyIter[T any]() Iter[T] {
+	return emptyIter[T]{}
+}
+
+type Iterator[T any] func(T) bool
+
+type Iter[T any] interface {
+	HasNext() bool
+	Next() T
+}
+
 type SliceAsIter[T any] []T
 
 func (s SliceAsIter[T]) AsIter() Iter[T] {

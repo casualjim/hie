@@ -1,12 +1,12 @@
 //go:build !race
 
-package hie_test
+package future_test
 
 import (
 	"sync"
 	"testing"
 
-	"github.com/casualjim/hie"
+	"github.com/casualjim/hie/future"
 )
 
 func TestCancelConc(t *testing.T) {
@@ -17,7 +17,7 @@ func TestCancelConc(t *testing.T) {
 		start := make(chan int)
 		var done sync.WaitGroup
 		done.Add(N)
-		f := hie.Do(hie.Func(func() (int, error) {
+		f := future.Do(future.Func(func() (int, error) {
 			select {} //block
 			// unreachable return 1, nil
 		}))

@@ -1,7 +1,12 @@
-package hie
+package iter
+
+import (
+	"github.com/casualjim/hie"
+	"github.com/casualjim/hie/option"
+)
 
 // Contains returns true if an element is present in the collection
-func Contains[T comparable](iter Iter[T], elem T) bool {
+func Contains[T comparable](iter hie.Iter[T], elem T) bool {
 	i := iter
 	for i.HasNext() {
 		if elem == i.Next() {
@@ -12,7 +17,7 @@ func Contains[T comparable](iter Iter[T], elem T) bool {
 }
 
 // Exists returns true if predicate function return true.
-func Exists[T any](iter Iter[T], predicate Predicate[T]) bool {
+func Exists[T any](iter hie.Iter[T], predicate Predicate[T]) bool {
 	i := iter
 	for i.HasNext() {
 		if predicate(i.Next()) {
@@ -23,7 +28,7 @@ func Exists[T any](iter Iter[T], predicate Predicate[T]) bool {
 }
 
 // All returns true if the predicate returns true for all of the elements in the collection or if the collection is empty.
-func All[T any](iter Iter[T], predicate Predicate[T]) bool {
+func All[T any](iter hie.Iter[T], predicate Predicate[T]) bool {
 	i := iter
 	for i.HasNext() {
 		if !predicate(i.Next()) {
@@ -34,15 +39,15 @@ func All[T any](iter Iter[T], predicate Predicate[T]) bool {
 }
 
 // NoneExist returns true if the predicate returns false for all the elements in the collection or if the collection is empty
-func NoneExist[T any](iter Iter[T], predicate Predicate[T]) bool {
+func NoneExist[T any](iter hie.Iter[T], predicate Predicate[T]) bool {
 	return All(iter, func(elem T) bool { return !predicate(elem) })
 }
 
 // IsSubset returns true if all elements of a subset are contained into a collection or if the subset is empty.
-func IsSubset[T comparable](iter Iter[T], subset Iter[T]) bool {
+func IsSubset[T comparable](iter hie.Iter[T], subset hie.Iter[T]) bool {
 	si := subset
 	cached := Collect(iter)
-	rewindable := Slice(cached...).AsIter()
+	rewindable := hie.Slice(cached...).AsIter()
 	for si.HasNext() {
 		if !Contains(rewindable, si.Next()) {
 			return false
@@ -52,9 +57,9 @@ func IsSubset[T comparable](iter Iter[T], subset Iter[T]) bool {
 }
 
 // IsDisjoint returns true if none of the elements of the subset set are contained by the superset
-func IsDisjoint[T comparable](iter Iter[T], other Iter[T]) bool {
+func IsDisjoint[T comparable](iter hie.Iter[T], other hie.Iter[T]) bool {
 	oi := other
-	cached := Slice(Collect(iter)...).AsIter()
+	cached := hie.Slice(Collect(iter)...).AsIter()
 	for oi.HasNext() {
 		if Contains(cached, oi.Next()) {
 			return false
@@ -64,7 +69,7 @@ func IsDisjoint[T comparable](iter Iter[T], other Iter[T]) bool {
 }
 
 // Intersect returns the intersection between two collections.
-func Intersect[T comparable](first Iter[T], second Iter[T]) Iter[T] {
+func Intersect[T comparable](first hie.Iter[T], second hie.Iter[T]) hie.Iter[T] {
 	seen := make(map[T]struct{})
 	firsti := first
 	for firsti.HasNext() {
@@ -74,21 +79,21 @@ func Intersect[T comparable](first Iter[T], second Iter[T]) Iter[T] {
 	return &intersectingIter[T]{
 		seen:        seen,
 		second:      second,
-		secondMatch: None[T](),
+		secondMatch: option.None[T](),
 	}
 }
 
 type intersectingIter[T comparable] struct {
 	seen        map[T]struct{}
-	second      Iter[T]
-	secondMatch Option[T]
+	second      hie.Iter[T]
+	secondMatch option.Option[T]
 }
 
 func (i *intersectingIter[T]) HasNext() bool {
 	for i.second.HasNext() {
 		val := i.second.Next()
 		if _, seen := i.seen[val]; seen {
-			i.secondMatch = Some(val)
+			i.secondMatch = option.Some(val)
 			return true
 		}
 	}
@@ -97,18 +102,18 @@ func (i *intersectingIter[T]) HasNext() bool {
 
 func (i *intersectingIter[T]) Next() T {
 	val := i.secondMatch
-	i.secondMatch = None[T]()
+	i.secondMatch = option.None[T]()
 	i.seen[val.Value()] = struct{}{}
 	return val.Value()
 }
 
-func (i *intersectingIter[T]) Iter() Iter[T] {
+func (i *intersectingIter[T]) Iter() hie.Iter[T] {
 	return i
 }
 
 // Difference returns the difference between two collections.
 // The returned slice are the elements that are in the first collection but not in the second
-func Difference[T comparable](first Iter[T], second Iter[T]) Iter[T] {
+func Difference[T comparable](first hie.Iter[T], second hie.Iter[T]) hie.Iter[T] {
 	var result []T
 	seen := make(map[T]struct{})
 
@@ -126,13 +131,13 @@ func Difference[T comparable](first Iter[T], second Iter[T]) Iter[T] {
 			result = append(result, elem)
 		}
 	}
-	return Slice(result...).AsIter()
+	return hie.Slice(result...).AsIter()
 }
 
 // SymmetricDifference removes the overlap between the 2 collections
 // The returned slice are the elements that are in either the first or the second collection,
 // but not in both
-func SymmetricDifference[T comparable](first Iter[T], second Iter[T]) Iter[T] {
+func SymmetricDifference[T comparable](first hie.Iter[T], second hie.Iter[T]) hie.Iter[T] {
 	var result []T
 	var leftbuf []T
 	var rightbuf []T
@@ -167,12 +172,12 @@ func SymmetricDifference[T comparable](first Iter[T], second Iter[T]) Iter[T] {
 		}
 	}
 
-	return Slice(result...).AsIter()
+	return hie.Slice(result...).AsIter()
 }
 
 // Union returns all distinct elements from given collections.
 // result returns will not change the order of elements relatively.
-func Union[T comparable](left Iter[T], right Iter[T], others ...Iter[T]) Iter[T] {
+func Union[T comparable](left hie.Iter[T], right hie.Iter[T], others ...hie.Iter[T]) hie.Iter[T] {
 	return &unionIter[T]{
 		seen:    make(map[T]struct{}),
 		current: Concat(left, right, others...),
@@ -181,8 +186,8 @@ func Union[T comparable](left Iter[T], right Iter[T], others ...Iter[T]) Iter[T]
 
 type unionIter[T comparable] struct {
 	seen    map[T]struct{}
-	current Iter[T]
-	notSeen Option[T]
+	current hie.Iter[T]
+	notSeen option.Option[T]
 }
 
 func (i *unionIter[T]) HasNext() bool {
@@ -190,7 +195,7 @@ func (i *unionIter[T]) HasNext() bool {
 		elem := i.current.Next()
 		if _, seen := i.seen[elem]; !seen {
 			i.seen[elem] = struct{}{}
-			i.notSeen = Some(elem)
+			i.notSeen = option.Some(elem)
 			return true
 		}
 	}
@@ -199,10 +204,10 @@ func (i *unionIter[T]) HasNext() bool {
 
 func (i *unionIter[T]) Next() T {
 	res := i.notSeen
-	i.notSeen = None[T]()
+	i.notSeen = option.None[T]()
 	return res.Value()
 }
 
-func (i *unionIter[T]) Iter() Iter[T] {
+func (i *unionIter[T]) Iter() hie.Iter[T] {
 	return i
 }

@@ -1,19 +1,20 @@
-package hie
+package iter
 
 import (
 	"fmt"
 	"strconv"
 	"testing"
 
+	"github.com/casualjim/hie"
 	"github.com/stretchr/testify/require"
 )
 
 func TestConcat(t *testing.T) {
 	t.Parallel()
 
-	s1 := Slice(1, 2, 3)
-	s2 := Slice(4, 5, 6)
-	s3 := Slice(7, 8, 9)
+	s1 := hie.Slice(1, 2, 3)
+	s2 := hie.Slice(4, 5, 6)
+	s3 := hie.Slice(7, 8, 9)
 
 	list := Concat(s1.AsIter(), s2.AsIter(), s3.AsIter())
 
@@ -41,7 +42,7 @@ func TestConcat(t *testing.T) {
 func TestSlice_Iter(t *testing.T) {
 	t.Parallel()
 
-	asIter := Slice(1, 2, 3)
+	asIter := hie.Slice(1, 2, 3)
 	iter := asIter.AsIter()
 
 	require.True(t, iter.HasNext())
@@ -60,7 +61,7 @@ func TestSlice_Iter(t *testing.T) {
 func TestSlice_ForEach(t *testing.T) {
 	t.Parallel()
 
-	slice := Slice(1, 2, 3)
+	slice := hie.Slice(1, 2, 3)
 
 	var result int
 	ForEach(slice.AsIter(), func(i int) bool {
@@ -74,7 +75,7 @@ func TestSlice_ForEach(t *testing.T) {
 func TestSlice_Map(t *testing.T) {
 	t.Parallel()
 
-	slice := Slice(1, 2, 3)
+	slice := hie.Slice(1, 2, 3)
 
 	iter := Map(slice.AsIter(), func(i int) string { return fmt.Sprintf("%d", i) })
 
@@ -84,9 +85,9 @@ func TestSlice_Map(t *testing.T) {
 func TestSlice_FlatMap(t *testing.T) {
 	t.Parallel()
 
-	slice := Slice(Slice(1, 2).AsIter(), Slice(3, 4).AsIter(), Slice(5, 6).AsIter())
+	slice := hie.Slice(hie.Slice(1, 2).AsIter(), hie.Slice(3, 4).AsIter(), hie.Slice(5, 6).AsIter())
 
-	iter := FlatMap(slice.AsIter(), func(i Iter[int]) Iter[string] {
+	iter := FlatMap(slice.AsIter(), func(i hie.Iter[int]) hie.Iter[string] {
 		return Map(i, func(i int) string { return fmt.Sprintf("%d", i) })
 	})
 
@@ -96,7 +97,7 @@ func TestSlice_FlatMap(t *testing.T) {
 func TestSlice_Flatten(t *testing.T) {
 	t.Parallel()
 
-	slice := Slice(Slice(1, 2).AsIter(), Slice(3, 4).AsIter(), Slice(5, 6).AsIter())
+	slice := hie.Slice(hie.Slice(1, 2).AsIter(), hie.Slice(3, 4).AsIter(), hie.Slice(5, 6).AsIter())
 
 	iter := Flatten(slice.AsIter())
 
@@ -106,7 +107,7 @@ func TestSlice_Flatten(t *testing.T) {
 func TestFilter(t *testing.T) {
 	t.Parallel()
 
-	slice := Slice(1, 2, 3, 4, 5, 6, 7, 8)
+	slice := hie.Slice(1, 2, 3, 4, 5, 6, 7, 8)
 
 	result := Filter(slice.AsIter(), func(i int) bool { return i%2 == 0 })
 
@@ -116,7 +117,7 @@ func TestFilter(t *testing.T) {
 func TestFilterMap(t *testing.T) {
 	t.Parallel()
 
-	slice := Slice(1, 2, 3, 4, 5, 6, 7, 8)
+	slice := hie.Slice(1, 2, 3, 4, 5, 6, 7, 8)
 
 	result := FilterMap(slice.AsIter(), func(i int) (string, bool) { return strconv.Itoa(i), i%2 == 0 })
 
@@ -126,13 +127,13 @@ func TestFilterMap(t *testing.T) {
 func TestTakeN(t *testing.T) {
 	t.Parallel()
 
-	slice := Slice(1, 2, 3, 4, 5, 6, 7, 8)
+	slice := hie.Slice(1, 2, 3, 4, 5, 6, 7, 8)
 	result := TakeN(slice.AsIter(), 4)
 
-	empty := EmptyIter[int]()
+	empty := hie.EmptyIter[int]()
 	er := TakeN(empty, 4)
 
-	empty2 := Slice[int]()
+	empty2 := hie.Slice[int]()
 	er2 := TakeN(empty2.AsIter(), 3)
 
 	require.Equal(t, []int{1, 2, 3, 4}, Collect(result))
