@@ -28,6 +28,7 @@ You can find iter implementations for a slice and an option value.
 * Union: return the unique elements contained in the provided iterators
 * Intersect: return the intersection of 2 iterators
 * Concat: combine several iterators into 1
+* TakeN
 
 ## Terminators
 
@@ -42,6 +43,10 @@ You can find iter implementations for a slice and an option value.
 ## Option 
 
 This library also contains an Option type that can be used with the same combinators.
+
+## Channel
+
+This library contains an Iter implementation that's backed by a channel
 
 ## What's next
 

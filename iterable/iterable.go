@@ -19,7 +19,7 @@ func FlattenAsIter[T any](it AsIter[AsIter[T]]) hie.Iter[T] {
 	return iter.Flatten(iter.Map(it.AsIter(), mapper))
 }
 
-func MapAsIter[T any](it AsIter[AsIter[T]]) hie.Iter[hie.Iter[T]] {
+func UnwrapAsIter[T any](it AsIter[AsIter[T]]) hie.Iter[hie.Iter[T]] {
 	mapper := func(i AsIter[T]) hie.Iter[T] { return i.AsIter() }
 	return iter.Map(it.AsIter(), mapper)
 }
