@@ -27,6 +27,11 @@ func (s SliceAsIter[T]) AsIter() Iter[T] {
 	}
 }
 
+
+func (s SliceAsIter[T]) Clone() SliceAsIter[T] {
+	return SliceAsIter[T](s)
+}
+
 func Slice[T any](value ...T) SliceAsIter[T] {
 	return SliceAsIter[T](value)
 }
@@ -48,3 +53,5 @@ func (s *sliceIter[T]) Next() T {
 	s.idx++
 	return s.under[s.idx]
 }
+
+func (s *sliceIter[T])
