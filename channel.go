@@ -12,6 +12,9 @@ type chanIter[T any] struct {
 }
 
 func (c *chanIter[T]) HasNext() bool {
+	if c.ch == nil {
+		return false
+	}
 	val, closed := <-c.ch
 	if !closed {
 		return false

@@ -1,15 +1,10 @@
 package hie
 
+import "io"
+
 func Identity[T any](input T) T { return input }
 
-type emptyIter[T any] struct{}
-
-func (emptyIter[T]) HasNext() bool { return false }
-func (emptyIter[T]) Next() T       { panic("next called on an empty iter") }
-
-func EmptyIter[T any]() Iter[T] {
-	return emptyIter[T]{}
-}
+func Close(closeable io.Closer) error { return closeable.Close() }
 
 type Iterator[T any] func(T) bool
 

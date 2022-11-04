@@ -130,7 +130,7 @@ func TestTakeN(t *testing.T) {
 	slice := hie.Slice(1, 2, 3, 4, 5, 6, 7, 8)
 	result := TakeN(slice.AsIter(), 4)
 
-	empty := hie.EmptyIter[int]()
+	empty := Empty[int]()
 	er := TakeN(empty, 4)
 
 	empty2 := hie.Slice[int]()

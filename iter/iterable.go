@@ -5,6 +5,15 @@ import (
 	"github.com/casualjim/hie/opt"
 )
 
+func Empty[T any]() hie.Iter[T] {
+	return emptyIter[T]{}
+}
+
+type emptyIter[T any] struct{}
+
+func (emptyIter[T]) HasNext() bool { return false }
+func (emptyIter[T]) Next() T       { panic("next called on an empty iter") }
+
 func ForEach[T any](iter hie.Iter[T], fn hie.Iterator[T]) {
 	i := iter
 	for i.HasNext() {
