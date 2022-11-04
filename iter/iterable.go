@@ -3,6 +3,7 @@ package iter
 import (
 	"github.com/casualjim/hie"
 	"github.com/casualjim/hie/opt"
+	"go.uber.org/multierr"
 )
 
 func Empty[T any]() hie.Iter[T] {
@@ -370,17 +371,69 @@ func Collect[T any](iter hie.Iter[T]) []T {
 var _ hie.Iter[any] = &cons[any]{}
 
 func Concat[T any](left hie.Iter[T], right hie.Iter[T], others ...hie.Iter[T]) hie.Iter[T] {
+	switch conc := left.(type) {
+	case *concat[T]:
+		conc.Append(right)
+		for _, other := range others {
+			conc.Append(other)
+		}
+		return conc
+	case *closableConcatIter[T]:
+		conc.Append(right)
+		for _, other := range others {
+			conc.Append(other)
+		}
+		return conc
+	case *clonableConcatIter[T]:
+		conc.Append(right)
+		for _, other := range others {
+			conc.Append(other)
+		}
+		return conc
+	case *clonableClosableConcatIter[T]:
+		conc.Append(right)
+		for _, other := range others {
+			conc.Append(other)
+		}
+		return conc
+	default:
+		isClonable, isClosable := IsClonable(left), IsClosable(left)
+		switch {
+		case isClonable && isClosable:
+			cc := &clonableClosableConcatIter[T]{}
+			cc.Append(left)
+			cc.Append(right)
+			for _, other := range others {
+				cc.Append(other)
+			}
+			return cc
+		case isClonable:
+			cc := &clonableConcatIter[T]{}
+			cc.Append(left)
+			cc.Append(right)
+			for _, other := range others {
+				cc.Append(other)
+			}
+			return cc
+		case isClosable:
+			cc := &closableConcatIter[T]{}
+			cc.Append(left)
+			cc.Append(right)
+			for _, other := range others {
+				cc.Append(other)
+			}
+			return cc
+		default:
+			cc := &concat[T]{}
+			cc.Append(left)
+			cc.Append(right)
+			for _, other := range others {
+				cc.Append(other)
+			}
+			return cc
+		}
+	}
 
-	conc, ok := left.(*concat[T])
-	if !ok {
-		conc = &concat[T]{}
-		conc.Append(left)
-	}
-	conc.Append(right)
-	for _, other := range others {
-		conc.Append(other)
-	}
-	return conc
 }
 
 type clonableConcatIter[T any] struct {
@@ -388,24 +441,57 @@ type clonableConcatIter[T any] struct {
 	tail *clonableConsIter[T]
 }
 
-func (c *clonableConcatIter[T]) Clone() hie.Iter[T] {
-	cui, cloned := Clone(hie.Iter[T](c.head))
-	if !cloned {
-		panic("Clone called on an unclonable iterator")
+func (c *clonableConcatIter[T]) Append(i hie.Iter[T]) {
+	isClonable, isClosable := IsClonable(i), IsClosable(i)
+	if !isClonable && isClosable {
+		panic("Adding an unclonable, closable iterator to a collection of clonable, unclosable iterators")
+	} else if !isClonable {
+		panic("Adding an unclonable iterator to a collection of clonable, unclosable iterators")
+	} else if isClosable {
+		panic("Adding a closable iterator to a collection of clonable, unclosable iterators")
 	}
 
-	head := cui.(*clonableConsIter[T])
-	var tail *clonableConsIter[T]
+	newItem := &clonableConsIter[T]{
+		under: i,
+	}
+
+	if c.head == nil {
+		c.head = newItem
+		c.tail = newItem
+	} else {
+		c.tail.next = newItem
+		c.tail = newItem
+	}
+}
+
+func (c *clonableConcatIter[T]) Clone() hie.Iter[T] {
+	var head = c.head
 	var cur = head
+	var prev *clonableConsIter[T]
+	var tail *clonableConsIter[T]
+
 	for {
 		if cur == c.tail {
-			tail = cur
+			tail = cur.Clone().(*clonableConsIter[T])
+			prev.next = tail
 			break
 		}
-		prev := cur
-		cur = cur.next.Clone().(*clonableConsIter[T])
-		prev.next = cur
+
+		if prev == nil {
+			nxt := cur.next
+			head = cur.Clone().(*clonableConsIter[T])
+			prev = head
+			cur = nxt
+			continue
+		}
+
+		c := cur.Clone().(*clonableConsIter[T])
+		cur = prev.next
+		prev.next = c
+		prev = c
+
 	}
+
 	return &clonableConcatIter[T]{
 		head: head,
 		tail: tail,
@@ -424,8 +510,8 @@ func (c *clonableConcatIter[T]) Next() T {
 }
 
 type closableConcatIter[T any] struct {
-	head *closableConcatIter[T]
-	tail *closableConcatIter[T]
+	head *closableConsIter[T]
+	tail *closableConsIter[T]
 }
 
 func (c *closableConcatIter[T]) HasNext() bool {
@@ -442,20 +528,125 @@ func (c *closableConcatIter[T]) Next() T {
 func (c *closableConcatIter[T]) Close() error {
 	head := c.head
 	cur := head
+	var err error
 	for {
-		if cur == tail {
+		if cur == nil {
 			break
 		}
+		err = multierr.Append(err, cur.Close())
+		cur = cur.next
 	}
-	return Close(hie.Iter[T](c.head))
+	return err
+}
+
+func (c *closableConcatIter[T]) Append(i hie.Iter[T]) {
+	isClonable, isClosable := IsClonable(i), IsClosable(i)
+	if isClonable && !isClosable {
+		panic("Adding a clonable, unclosable iterator to a collection of closable iterators")
+	} else if isClonable {
+		panic("Adding a clonable iterator to a collection of unclonable, closable iterators")
+	} else if !isClosable {
+		panic("Adding an unclosable iterator to a collection of unclonable, closable iterators")
+	}
+
+	newItem := &closableConsIter[T]{
+		under: i,
+	}
+
+	if c.head == nil {
+		c.head = newItem
+		c.tail = newItem
+	} else {
+		c.tail.next = newItem
+		c.tail = newItem
+	}
 }
 
 type clonableClosableConcatIter[T any] struct {
-	clonableConcatIter[T]
+	head *clonableClosableConsIter[T]
+	tail *clonableClosableConsIter[T]
+}
+
+func (c *clonableClosableConcatIter[T]) Clone() hie.Iter[T] {
+	var head = c.head
+	var cur = head
+	var prev *clonableClosableConsIter[T]
+	var tail *clonableClosableConsIter[T]
+
+	for {
+		if cur == c.tail {
+			tail = cur.Clone().(*clonableClosableConsIter[T])
+			prev.next = tail
+			break
+		}
+
+		if prev == nil {
+			nxt := cur.next
+			head = cur.Clone().(*clonableClosableConsIter[T])
+			prev = head
+			cur = nxt
+			continue
+		}
+
+		nxt := prev.next
+		c := cur.Clone().(*clonableClosableConsIter[T])
+		cur = nxt
+		prev.next = c
+		prev = c
+	}
+
+	return &clonableClosableConcatIter[T]{
+		head: head,
+		tail: tail,
+	}
+}
+
+func (c *clonableClosableConcatIter[T]) Append(i hie.Iter[T]) {
+	isClonable, isClosable := IsClonable(i), IsClosable(i)
+	if !isClonable && !isClosable {
+		panic("Adding an unclonable, unclosable iterator to a collection of clonable, closable iterators")
+	} else if !isClonable {
+		panic("Adding an unclonable iterator to a collection of clonable, closable iterators")
+	} else if !isClosable {
+		panic("Adding an unclosable iterator to a collection of clonable, closable iterators")
+	}
+
+	newItem := &clonableClosableConsIter[T]{
+		under: i,
+	}
+
+	if c.head == nil {
+		c.head = newItem
+		c.tail = newItem
+	} else {
+		c.tail.next = newItem
+		c.tail = newItem
+	}
+}
+
+func (c *clonableClosableConcatIter[T]) HasNext() bool {
+	return c.head != nil && c.head.HasNext()
+}
+
+func (c *clonableClosableConcatIter[T]) Next() T {
+	if c == nil || c.head == nil {
+		panic("iterating an empty clonable concat iterator")
+	}
+	return c.head.Next()
 }
 
 func (c *clonableClosableConcatIter[T]) Close() error {
-	return Close(hie.Iter[T](&c.clonableConcatIter))
+	head := c.head
+	cur := head
+	var err error
+	for {
+		if cur == nil {
+			break
+		}
+		err = multierr.Append(err, cur.Close())
+		cur = cur.next
+	}
+	return err
 }
 
 type concat[T any] struct {
@@ -464,6 +655,15 @@ type concat[T any] struct {
 }
 
 func (c *concat[T]) Append(i hie.Iter[T]) {
+	isClonable, isClosable := IsClonable(i), IsClosable(i)
+	if isClonable && isClosable {
+		panic("Adding a clonable, closable iterator to a collection of unclosable and unclonable iterators")
+	} else if isClonable {
+		panic("Adding a clonable iterator to a collection of unclonable iterators")
+	} else if isClosable {
+		panic("Adding a closable iterator to a collection of unclosable iterators")
+	}
+
 	newItem := &cons[T]{
 		under: i,
 	}
@@ -501,7 +701,7 @@ func (c *clonableConsIter[T]) Clone() hie.Iter[T] {
 
 	return &clonableConsIter[T]{
 		under: cu,
-		next:  c.next.Clone().(*clonableConsIter[T]),
+		next:  c.next, // clone for the next element is handled in the container
 	}
 }
 
@@ -534,13 +734,7 @@ type closableConsIter[T any] struct {
 }
 
 func (c *closableConsIter[T]) Close() error {
-	if c.next != nil {
-		if e := c.next.Close(); e != nil {
-			return e
-		}
-	}
-	err := Close(c.under)
-	return err
+	return Close(c.under)
 }
 
 func (c *closableConsIter[T]) HasNext() bool {
@@ -579,16 +773,12 @@ func (c *clonableClosableConsIter[T]) Clone() hie.Iter[T] {
 
 	return &clonableClosableConsIter[T]{
 		under: cu,
-		next:  c.next.Clone().(*clonableClosableConsIter[T]),
+		next:  c.next, // clone for the next element is handled in the container
 	}
 }
 
 func (c *clonableClosableConsIter[T]) Close() error {
-	err := Close(c.under)
-	if e := c.next.Close(); e != nil {
-		return e
-	}
-	return err
+	return Close(c.under)
 }
 
 func (c *clonableClosableConsIter[T]) HasNext() bool {

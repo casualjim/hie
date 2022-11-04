@@ -31,17 +31,5 @@ func Clone[T any](i hie.Iter[T]) (hie.Iter[T], bool) {
 }
 
 func Cloned[T hie.Clonable[T]](in hie.Iter[T]) hie.Iter[T] {
-	return &clonedIter[T]{under: in}
-}
-
-type clonedIter[T hie.Clonable[T]] struct {
-	under hie.Iter[T]
-}
-
-func (c *clonedIter[T]) HasNext() bool {
-	return c.under.HasNext()
-}
-
-func (c *clonedIter[T]) Next() T {
-	return c.under.Next().Clone()
+	return Map(in, func(i T) T { return i.Clone() })
 }
