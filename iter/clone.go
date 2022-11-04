@@ -6,6 +6,14 @@ import (
 	"github.com/casualjim/hie"
 )
 
+func IsClonable[T any](i hie.Iter[T]) bool {
+	if _, ok := i.(hie.ClonableIter[T]); ok {
+		return true
+	}
+	_, hasClone := reflect.ValueOf(i).Type().MethodByName("Clone")
+	return hasClone
+}
+
 func Clone[T any](i hie.Iter[T]) (hie.Iter[T], bool) {
 	if ic, ok := i.(hie.ClonableIter[T]); ok {
 		return ic.Clone(), true

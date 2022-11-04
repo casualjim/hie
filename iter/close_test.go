@@ -28,25 +28,25 @@ func newIOCloserIter() hie.Iter[int] {
 	return &ioCloseableIter{}
 }
 
-type closableIter struct {
+type testCloseIter struct {
 	count int
 }
 
-func (c *closableIter) HasNext() bool {
+func (c *testCloseIter) HasNext() bool {
 	return true
 }
 
-func (c *closableIter) Next() int {
+func (c *testCloseIter) Next() int {
 	return 1
 }
 
-func (c *closableIter) Close() error {
+func (c *testCloseIter) Close() error {
 	c.count++
 	return nil
 }
 
 func newCloserIter() hie.Iter[int] {
-	return &closableIter{}
+	return &testCloseIter{}
 }
 
 func TestIterIOCloser(t *testing.T) {
@@ -58,5 +58,5 @@ func TestIterIOCloser(t *testing.T) {
 func TestCloseIter(t *testing.T) {
 	r := newCloserIter()
 	require.NoError(t, Close(r))
-	require.Equal(t, 1, r.(*closableIter).count)
+	require.Equal(t, 1, r.(*testCloseIter).count)
 }
