@@ -88,9 +88,15 @@ func (o *optionIter[T]) HasNext() bool {
 }
 
 func (o *optionIter[T]) Next() T {
-	if o.consumed {
+	if o.consumed || o.val.IsNone() {
 		panic("next called on a consumed option iter")
 	}
 	o.consumed = true
 	return o.val.Value()
+}
+
+func (o *optionIter[T]) Clone() hie.Iter[T] {
+	return &optionIter[T]{
+		val: o.val,
+	}
 }

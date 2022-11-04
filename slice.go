@@ -47,3 +47,10 @@ func (s *sliceIter[T]) Next() T {
 	s.idx++
 	return s.under[s.idx]
 }
+
+func (s *sliceIter[T]) Clone() Iter[T] {
+	return &sliceIter[T]{
+		under: s.under,
+		idx:   -1,
+	}
+}

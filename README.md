@@ -18,6 +18,8 @@ type Iter[T any] interface {
 
 You can find iter implementations for a slice and an option value.
 
+There is support for clonable iterators, if the iterator implements a `Clone()` method that returns a single value that is either an `Iter[T]` or a type that implements `Iter[T]` then you can use the `iter.Clone(iterator)` method.
+
 ## Combiner
 
 * Map
@@ -28,7 +30,8 @@ You can find iter implementations for a slice and an option value.
 * Union: return the unique elements contained in the provided iterators
 * Intersect: return the intersection of 2 iterators
 * Concat: combine several iterators into 1
-* TakeN
+* TakeN: take the first n items of an iterator
+* Cloned: if the element of the iterator is cloneable it returns an iterator that clones every element
 
 ## Terminators
 
