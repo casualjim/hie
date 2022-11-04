@@ -44,9 +44,9 @@ func TestNonExist(t *testing.T) {
 
 	slice := hie.Slice(1, 2, 3)
 
-	require.True(t, NoneExist(slice.AsIter(), isNaught))
-	require.False(t, NoneExist(slice.AsIter(), isLt3))
-	require.False(t, NoneExist(slice.AsIter(), isLt10))
+	require.True(t, Absent(slice.AsIter(), isNaught))
+	require.False(t, Absent(slice.AsIter(), isLt3))
+	require.False(t, Absent(slice.AsIter(), isLt10))
 }
 
 func TestIsSubset(t *testing.T) {

@@ -38,8 +38,8 @@ func All[T any](iter hie.Iter[T], predicate Predicate[T]) bool {
 	return true
 }
 
-// NoneExist returns true if the predicate returns false for all the elements in the collection or if the collection is empty
-func NoneExist[T any](iter hie.Iter[T], predicate Predicate[T]) bool {
+// Absent returns true if the predicate returns false for all the elements in the collection or if the collection is empty
+func Absent[T any](iter hie.Iter[T], predicate Predicate[T]) bool {
 	return All(iter, func(elem T) bool { return !predicate(elem) })
 }
 
