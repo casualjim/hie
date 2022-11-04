@@ -28,18 +28,18 @@ func New[T any](val T) Option[T] {
 		if vv.IsNil() {
 			return none[T]{}
 		}
-		return some[T]{
+		return &some[T]{
 			value: val,
 		}
 	default:
-		return some[T]{
+		return &some[T]{
 			value: val,
 		}
 	}
 }
 
 func Some[T any](val T) Option[T] {
-	return some[T]{value: val}
+	return &some[T]{value: val}
 }
 
 func None[T any]() Option[T] {
@@ -53,13 +53,13 @@ type some[T any] struct {
 func (some[T]) isOption()    {} //nolint:unused
 func (some[T]) IsNone() bool { return false }
 func (some[T]) IsSome() bool { return true }
-func (s some[T]) Value() T   { return s.value }
-func (s some[T]) ValueOrDefault() T {
+func (s *some[T]) Value() T  { return s.value }
+func (s *some[T]) ValueOrDefault() T {
 	return s.value
 }
-func (s some[T]) ValueOr(defaultValue T) T                { return s.value }
-func (s some[T]) ValueOrElse(defaultValue Defaulter[T]) T { return s.value }
-func (s some[T]) AsIter() hie.Iter[T]                     { return hie.Slice(s.value).AsIter() }
+func (s *some[T]) ValueOr(defaultValue T) T                { return s.value }
+func (s *some[T]) ValueOrElse(defaultValue Defaulter[T]) T { return s.value }
+func (s *some[T]) AsIter() hie.Iter[T]                     { return &optionIter[T]{val: s} }
 
 type none[T any] struct {
 }
@@ -76,4 +76,21 @@ func (none[T]) ValueOr(defaultValue T) T {
 	return defaultValue
 }
 func (none[T]) ValueOrElse(defaultValue Defaulter[T]) T { return defaultValue() }
-func (n none[T]) AsIter() hie.Iter[T]                   { return hie.Slice[T]().AsIter() }
+func (n none[T]) AsIter() hie.Iter[T]                   { return &optionIter[T]{val: n} }
+
+type optionIter[T any] struct {
+	val      Option[T]
+	consumed bool
+}
+
+func (o *optionIter[T]) HasNext() bool {
+	return !o.consumed && o.val.IsSome()
+}
+
+func (o *optionIter[T]) Next() T {
+	if o.consumed {
+		panic("next called on a consumed option iter")
+	}
+	o.consumed = true
+	return o.val.Value()
+}
