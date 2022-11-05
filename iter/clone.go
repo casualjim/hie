@@ -6,6 +6,14 @@ import (
 	"github.com/casualjim/hie"
 )
 
+func IsClonable[T any](i hie.Iter[T]) bool {
+	if _, ok := i.(hie.ClonableIter[T]); ok {
+		return true
+	}
+	_, hasClone := reflect.ValueOf(i).Type().MethodByName("Clone")
+	return hasClone
+}
+
 func Clone[T any](i hie.Iter[T]) (hie.Iter[T], bool) {
 	if ic, ok := i.(hie.ClonableIter[T]); ok {
 		return ic.Clone(), true
@@ -15,6 +23,10 @@ func Clone[T any](i hie.Iter[T]) (hie.Iter[T], bool) {
 	tpe := val.Type()
 	mthd, hasClone := tpe.MethodByName("Clone")
 	if hasClone {
+		if mthd.Type.NumOut() != 1 {
+			panic("iter can't only clone a type that returns a single type argument, you may need to create an adapter")
+		}
+
 		res := mthd.Func.Call([]reflect.Value{val})
 		return res[0].Interface().(hie.Iter[T]), true
 	}
@@ -23,17 +35,5 @@ func Clone[T any](i hie.Iter[T]) (hie.Iter[T], bool) {
 }
 
 func Cloned[T hie.Clonable[T]](in hie.Iter[T]) hie.Iter[T] {
-	return &clonedIter[T]{under: in}
-}
-
-type clonedIter[T hie.Clonable[T]] struct {
-	under hie.Iter[T]
-}
-
-func (c *clonedIter[T]) HasNext() bool {
-	return c.under.HasNext()
-}
-
-func (c *clonedIter[T]) Next() T {
-	return c.under.Next().Clone()
+	return Map(in, func(i T) T { return i.Clone() })
 }

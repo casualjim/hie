@@ -1,6 +1,8 @@
 package hie
 
-import "io"
+import (
+	"io"
+)
 
 func Identity[T any](input T) T { return input }
 
@@ -23,7 +25,7 @@ func (s SliceAsIter[T]) AsIter() Iter[T] {
 }
 
 func (s SliceAsIter[T]) Clone() SliceAsIter[T] {
-	return SliceAsIter[T](s)
+	return SliceAsIter[T](append([]T(nil), []T(s)...))
 }
 
 func Slice[T any](value ...T) SliceAsIter[T] {
@@ -49,8 +51,19 @@ func (s *sliceIter[T]) Next() T {
 }
 
 func (s *sliceIter[T]) Clone() Iter[T] {
+	// et := reflect.TypeOf(s.under).Elem()
+	// under := s.under
+	// if et.AssignableTo(clonableIterT) {
+
+	// }
 	return &sliceIter[T]{
 		under: s.under,
 		idx:   -1,
 	}
 }
+
+// var clonableIterT reflect.Type
+
+// func init() {
+// 	clonableIterT = reflect.TypeOf([0]ClonableIter[any]{}).Elem()
+// }
