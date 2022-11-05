@@ -23,6 +23,10 @@ func Clone[T any](i hie.Iter[T]) (hie.Iter[T], bool) {
 	tpe := val.Type()
 	mthd, hasClone := tpe.MethodByName("Clone")
 	if hasClone {
+		if mthd.Type.NumOut() != 1 {
+			panic("iter can't only clone a type that returns a single type argument, you may need to create an adapter")
+		}
+
 		res := mthd.Func.Call([]reflect.Value{val})
 		return res[0].Interface().(hie.Iter[T]), true
 	}

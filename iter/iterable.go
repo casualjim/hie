@@ -59,18 +59,43 @@ func FilterMap[T, R any](iter hie.Iter[T], fn FilterMapper[T, R]) hie.Iter[R] {
 
 type closableFilterMapperIter[T, R any] struct {
 	filterMapperIter[T, R]
+	closed bool
+}
+
+func (c *closableFilterMapperIter[T, R]) HasNext() bool {
+	return !c.closed && c.filterMapperIter.HasNext()
+}
+
+func (c *closableFilterMapperIter[T, R]) Next() R {
+	if c.closed {
+		panic("next called on a closed iterator")
+	}
+	return c.filterMapperIter.Next()
 }
 
 func (c *closableFilterMapperIter[T, R]) Close() error {
-	return Close(hie.Iter[R](&c.filterMapperIter))
+	c.closed = true
+	return Close(c.under)
 }
 
 type clonableClosableFilterMapperIter[T, R any] struct {
 	clonableFilterMapper[T, R]
+	closed bool
 }
 
+func (c *clonableClosableFilterMapperIter[T, R]) HasNext() bool {
+	return !c.closed && c.clonableFilterMapper.HasNext()
+}
+
+func (c *clonableClosableFilterMapperIter[T, R]) Next() R {
+	if c.closed {
+		panic("next called on a closed iterator")
+	}
+	return c.clonableFilterMapper.Next()
+}
 func (c *clonableClosableFilterMapperIter[T, R]) Close() error {
-	return Close(hie.Iter[R](&c.filterMapperIter))
+	c.closed = true
+	return Close(c.under)
 }
 
 type clonableFilterMapper[T, R any] struct {
@@ -84,8 +109,9 @@ func (c *clonableFilterMapper[T, R]) Clone() hie.Iter[R] {
 	}
 	return &clonableFilterMapper[T, R]{
 		filterMapperIter: filterMapperIter[T, R]{
-			under:    cu,
-			mapperFn: c.mapperFn,
+			under:     cu,
+			mapperFn:  c.mapperFn,
+			lastMatch: opt.None[R](),
 		},
 	}
 }
@@ -164,18 +190,44 @@ func (c *clonableMapper[T, R]) Clone() hie.Iter[R] {
 
 type closableMapperIter[T, R any] struct {
 	mapperIter[T, R]
+	closed bool
+}
+
+func (c *closableMapperIter[T, R]) HasNext() bool {
+	return !c.closed && c.mapperIter.HasNext()
+}
+
+func (c *closableMapperIter[T, R]) Next() R {
+	if c.closed {
+		panic("next called on a closed iterator")
+	}
+	return c.mapperIter.Next()
 }
 
 func (c *closableMapperIter[T, R]) Close() error {
-	return Close(hie.Iter[R](&c.mapperIter))
+	c.closed = true
+	return Close(c.under)
 }
 
 type clonableClosableMapperIter[T, R any] struct {
 	clonableMapper[T, R]
+	closed bool
+}
+
+func (c *clonableClosableMapperIter[T, R]) HasNext() bool {
+	return !c.closed && c.clonableMapper.HasNext()
+}
+
+func (c *clonableClosableMapperIter[T, R]) Next() R {
+	if c.closed {
+		panic("next called on a closed iterator")
+	}
+	return c.clonableMapper.Next()
 }
 
 func (c *clonableClosableMapperIter[T, R]) Close() error {
-	return Close(hie.Iter[R](&c.clonableMapper))
+	c.closed = true
+	return Close(c.under)
 }
 
 type mapperIter[T, R any] struct {
@@ -239,18 +291,44 @@ func (c *clonableFlatMapper[T, R]) Clone() hie.Iter[R] {
 
 type closableFlatMapperIter[T, R any] struct {
 	flatMapperIter[T, R]
+	closed bool
+}
+
+func (c *closableFlatMapperIter[T, R]) HasNext() bool {
+	return !c.closed && c.flatMapperIter.HasNext()
+}
+
+func (c *closableFlatMapperIter[T, R]) Next() R {
+	if !c.closed {
+		panic("next called on a closed iterator")
+	}
+	return c.flatMapperIter.Next()
 }
 
 func (c *closableFlatMapperIter[T, R]) Close() error {
-	return Close(hie.Iter[R](&c.flatMapperIter))
+	c.closed = true
+	return Close(c.under)
 }
 
 type clonableClosableFlatMapperIter[T, R any] struct {
 	clonableFlatMapper[T, R]
+	closed bool
+}
+
+func (c *clonableClosableFlatMapperIter[T, R]) HasNext() bool {
+	return !c.closed && c.clonableFlatMapper.HasNext()
+}
+
+func (c *clonableClosableFlatMapperIter[T, R]) Next() R {
+	if !c.closed {
+		panic("next called on a closed iterator")
+	}
+	return c.clonableFlatMapper.Next()
 }
 
 func (c *clonableClosableFlatMapperIter[T, R]) Close() error {
-	return Close(hie.Iter[R](&c.clonableFlatMapper))
+	c.closed = true
+	return Close(c.under)
 }
 
 type flatMapperIter[T, R any] struct {
@@ -312,24 +390,51 @@ func (c *clonableFilterIter[T]) Clone() hie.Iter[T] {
 		filterIter: filterIter[T]{
 			under:     cu,
 			predicate: c.predicate,
+			lastMatch: opt.None[T](),
 		},
 	}
 }
 
 type closableFilterIter[T any] struct {
 	filterIter[T]
+	closed bool
+}
+
+func (c *closableFilterIter[T]) HasNext() bool {
+	return !c.closed && c.filterIter.HasNext()
+}
+
+func (c *closableFilterIter[T]) Next() T {
+	if !c.closed {
+		panic("next called on a closed iterator")
+	}
+	return c.filterIter.Next()
 }
 
 func (c *closableFilterIter[T]) Close() error {
-	return Close(hie.Iter[T](&c.filterIter))
+	c.closed = true
+	return Close(c.under)
 }
 
 type clonableClosableFilterIter[T any] struct {
 	clonableFilterIter[T]
+	closed bool
+}
+
+func (c *clonableClosableFilterIter[T]) HasNext() bool {
+	return !c.closed && c.clonableFilterIter.HasNext()
+}
+
+func (c *clonableClosableFilterIter[T]) Next() T {
+	if !c.closed {
+		panic("next called on a closed iterator")
+	}
+	return c.clonableFilterIter.Next()
 }
 
 func (c *clonableClosableFilterIter[T]) Close() error {
-	return Close(hie.Iter[T](&c.clonableFilterIter))
+	c.closed = true
+	return Close(c.under)
 }
 
 type filterIter[T any] struct {
@@ -471,7 +576,7 @@ func (c *clonableConcatIter[T]) Clone() hie.Iter[T] {
 	var tail *clonableConsIter[T]
 
 	for {
-		if cur == c.tail {
+		if cur.next == nil {
 			tail = cur.Clone().(*clonableConsIter[T])
 			prev.next = tail
 			break
@@ -485,8 +590,9 @@ func (c *clonableConcatIter[T]) Clone() hie.Iter[T] {
 			continue
 		}
 
+		nxt := cur.next
 		c := cur.Clone().(*clonableConsIter[T])
-		cur = prev.next
+		cur = nxt
 		prev.next = c
 		prev = c
 
@@ -510,22 +616,30 @@ func (c *clonableConcatIter[T]) Next() T {
 }
 
 type closableConcatIter[T any] struct {
-	head *closableConsIter[T]
-	tail *closableConsIter[T]
+	head   *closableConsIter[T]
+	tail   *closableConsIter[T]
+	closed bool
 }
 
 func (c *closableConcatIter[T]) HasNext() bool {
-	return c.head != nil && c.head.HasNext()
+	return !c.closed && c.head != nil && c.head.HasNext()
 }
 
 func (c *closableConcatIter[T]) Next() T {
-	if c == nil || c.head == nil {
+	if c == nil {
+		panic("iterating an empty clonable concat iterator")
+	}
+	if c.closed {
+		panic("next called on a closed iterator")
+	}
+	if c.head == nil {
 		panic("iterating an empty clonable concat iterator")
 	}
 	return c.head.Next()
 }
 
 func (c *closableConcatIter[T]) Close() error {
+	c.closed = true
 	head := c.head
 	cur := head
 	var err error
@@ -563,8 +677,9 @@ func (c *closableConcatIter[T]) Append(i hie.Iter[T]) {
 }
 
 type clonableClosableConcatIter[T any] struct {
-	head *clonableClosableConsIter[T]
-	tail *clonableClosableConsIter[T]
+	head   *clonableClosableConsIter[T]
+	tail   *clonableClosableConsIter[T]
+	closed bool
 }
 
 func (c *clonableClosableConcatIter[T]) Clone() hie.Iter[T] {
@@ -574,7 +689,7 @@ func (c *clonableClosableConcatIter[T]) Clone() hie.Iter[T] {
 	var tail *clonableClosableConsIter[T]
 
 	for {
-		if cur == c.tail {
+		if cur.next == nil {
 			tail = cur.Clone().(*clonableClosableConsIter[T])
 			prev.next = tail
 			break
@@ -588,16 +703,18 @@ func (c *clonableClosableConcatIter[T]) Clone() hie.Iter[T] {
 			continue
 		}
 
-		nxt := prev.next
+		nxt := cur.next
 		c := cur.Clone().(*clonableClosableConsIter[T])
 		cur = nxt
 		prev.next = c
 		prev = c
+
 	}
 
 	return &clonableClosableConcatIter[T]{
-		head: head,
-		tail: tail,
+		head:   head,
+		tail:   tail,
+		closed: c.closed,
 	}
 }
 
@@ -625,17 +742,24 @@ func (c *clonableClosableConcatIter[T]) Append(i hie.Iter[T]) {
 }
 
 func (c *clonableClosableConcatIter[T]) HasNext() bool {
-	return c.head != nil && c.head.HasNext()
+	return !c.closed && c.head != nil && c.head.HasNext()
 }
 
 func (c *clonableClosableConcatIter[T]) Next() T {
-	if c == nil || c.head == nil {
+	if c == nil {
+		panic("iterating an empty clonable concat iterator")
+	}
+	if c.closed {
+		panic("next called on a closed iterator")
+	}
+	if c.head == nil {
 		panic("iterating an empty clonable concat iterator")
 	}
 	return c.head.Next()
 }
 
 func (c *clonableClosableConcatIter[T]) Close() error {
+	c.closed = true
 	head := c.head
 	cur := head
 	var err error
@@ -909,16 +1033,42 @@ func (c *clonableTakeNIter[T]) Clone() hie.Iter[T] {
 
 type closableTakeNIter[T any] struct {
 	takeNIter[T]
+	closed bool
+}
+
+func (c *closableTakeNIter[T]) HasNext() bool {
+	return !c.closed && c.under.HasNext()
+}
+
+func (c *closableTakeNIter[T]) Next() T {
+	if c.closed {
+		panic("next called on a closed iterator")
+	}
+	return c.under.Next()
 }
 
 func (c *closableTakeNIter[T]) Close() error {
-	return Close(hie.Iter[T](&c.takeNIter))
+	c.closed = true
+	return Close(hie.Iter[T](c.under))
 }
 
 type clonableClosableTakeNIter[T any] struct {
 	clonableTakeNIter[T]
+	closed bool
+}
+
+func (c *clonableClosableTakeNIter[T]) HasNext() bool {
+	return !c.closed && c.under.HasNext()
+}
+
+func (c *clonableClosableTakeNIter[T]) Next() T {
+	if c.closed {
+		panic("next called on a closed iterator")
+	}
+	return c.under.Next()
 }
 
 func (c *clonableClosableTakeNIter[T]) Close() error {
-	return Close(hie.Iter[T](&c.clonableTakeNIter))
+	c.closed = true
+	return Close(hie.Iter[T](c.under))
 }
